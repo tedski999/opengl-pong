@@ -1,4 +1,5 @@
 #include "window.h"
+#include "renderer.h"
 #include "pong.h"
 #include <GLFW/glfw3.h>
 
@@ -14,6 +15,8 @@ int pong_window_init() {
 	window = glfwCreateWindow(640, 480, "Pong", NULL, NULL);
 	glfwSetWindowCloseCallback(window, window_close_callback);
 	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);
+	pong_renderer_init();
 	return 0;
 }
 
