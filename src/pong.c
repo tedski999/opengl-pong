@@ -1,45 +1,32 @@
 #include "pong.h"
+#include "window.h"
 #include "ball.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
-#include <unistd.h>
-#include <GLFW/glfw3.h>
 
 #define NSEC_PER_SEC (1000000000)
 #define NSEC_PER_TICK (NSEC_PER_SEC / 60)
 
 static bool is_running;
-static GLFWwindow *window;
 static struct PongBall *ball;
 
-void window_close_callback(GLFWwindow *context) {
-	is_running = false;
-}
-
+// TODO: error handling
 int pong_init() {
-	glfwInit();
-	window = glfwCreateWindow(640, 480, "Pong", NULL, NULL);
-	glfwSetWindowCloseCallback(window, window_close_callback);
-	glfwMakeContextCurrent(window);
-
-	printf("Vendor: %s\n", glGetString(GL_VENDOR));
-	printf("Renderer: %s\n", glGetString(GL_RENDERER));
-
+	pong_window_init();
 	ball = pong_ball_create();
-
 	return 0;
 }
 
 void pong_start() {
 	unsigned int accumulated_time;
 	struct timespec current_time, previous_time;
-	unsigned int tick_count, draw_count, current_second, artifical_stress;
+	unsigned int tick_count, draw_count, current_second;
 
 	is_running = true;
 	accumulated_time = 0;
 	clock_gettime(CLOCK_MONOTONIC, &previous_time);
-	tick_count = draw_count = artifical_stress = 0;
+	tick_count = draw_count = 0;
 	current_second = previous_time.tv_sec;
 	do {
 
@@ -49,28 +36,30 @@ void pong_start() {
 
 		while (accumulated_time >= NSEC_PER_TICK) {
 			accumulated_time -= NSEC_PER_TICK;
-			glfwPollEvents();
+			pong_window_update();
 			pong_ball_update(ball);
 			tick_count++;
 		}
 
 		pong_ball_draw(ball);
-		glfwSwapBuffers(window);
-		usleep(artifical_stress); // simulate rendering stress
+		pong_window_render();
 		draw_count++;
 
 		if (current_time.tv_sec > current_second) {
 			current_second = current_time.tv_sec;
-			printf("%ims draw stress -> %itps %ifps\n", artifical_stress / 1000, tick_count, draw_count);
+			printf("%itps %ifps\n", tick_count, draw_count);
 			tick_count = draw_count = 0;
-			artifical_stress += 1000;
 		}
 	} while (is_running);
 }
 
+// TODO: this should be an event callback
+void pong_stop() {
+	is_running = false;
+}
+
 void pong_cleanup() {
 	pong_ball_destroy(ball);
-	glfwDestroyWindow(window);
-	glfwTerminate();
+	pong_window_cleanup();
 }
 

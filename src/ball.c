@@ -1,7 +1,6 @@
 #include "ball.h"
-#include <stdio.h>
+#include "renderer.h"
 #include <stdlib.h>
-#include <GL/gl.h>
 
 struct PongBall {
 	float xpos, ypos, xsize, ysize, xvel, yvel;
@@ -27,18 +26,7 @@ void pong_ball_update(struct PongBall *ball) {
 }
 
 void pong_ball_draw(struct PongBall *ball) {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glBegin(GL_TRIANGLES);
-
-	glVertex2f(ball->xpos - (ball->xsize / 2), ball->ypos - (ball->ysize / 2));
-	glVertex2f(ball->xpos + (ball->xsize / 2), ball->ypos - (ball->ysize / 2));
-	glVertex2f(ball->xpos - (ball->xsize / 2), ball->ypos + (ball->ysize / 2));
-
-	glVertex2f(ball->xpos + (ball->xsize / 2), ball->ypos + (ball->ysize / 2));
-	glVertex2f(ball->xpos - (ball->xsize / 2), ball->ypos + (ball->ysize / 2));
-	glVertex2f(ball->xpos + (ball->xsize / 2), ball->ypos - (ball->ysize / 2));
-
-	glEnd();
+	pong_renderer_drawrect(ball->xpos, ball->ypos, ball->xsize, ball->ysize);
 }
 
 void pong_ball_destroy(struct PongBall *ball) {
