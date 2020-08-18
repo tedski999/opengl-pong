@@ -35,6 +35,8 @@ void pong_log_init() {
 	printf("%s\n", time_string);
 
 	// TODO: log files
+
+	PONG_LOG("Logging initialized!", PONG_LOG_VERBOSE);
 }
 
 void pong_log(const char *message, enum PongLogUrgency urgency, ...) {
@@ -57,7 +59,7 @@ void pong_log(const char *message, enum PongLogUrgency urgency, ...) {
 }
 
 void pong_log_cleanup() {
-	PONG_LOG("Cleaning up logging system...", PONG_LOG_INFO);
+	PONG_LOG("Cleaning up logging system...", PONG_LOG_VERBOSE);
 	// Closing and compressing log files
 }
 

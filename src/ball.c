@@ -1,5 +1,6 @@
 #include "ball.h"
 #include "renderer.h"
+#include "log.h"
 #include <stdlib.h>
 
 struct PongBall {
@@ -7,13 +8,10 @@ struct PongBall {
 };
 
 struct PongBall *pong_ball_create() {
-	struct PongBall *ball = malloc(sizeof ball);
-	ball->xpos = 0.f;
-	ball->ypos = 0.f;
-	ball->xsize = 0.1f;
-	ball->ysize = 0.1f;
-	ball->xvel = 0.01f;
-	ball->yvel = 0.0025f;
+	PONG_LOG("Creating new ball...", PONG_LOG_VERBOSE);
+	struct PongBall *ball = malloc(sizeof (struct PongBall));
+	*ball = (struct PongBall) { 0.f, 0.f, 0.1f, 0.1f, 0.01f, 0.0025f };
+	PONG_LOG("Initialized ball at %p!", PONG_LOG_VERBOSE, ball);
 	return ball;
 }
 
@@ -30,6 +28,7 @@ void pong_ball_draw(struct PongBall *ball) {
 }
 
 void pong_ball_destroy(struct PongBall *ball) {
+	PONG_LOG("Destroying ball at %p...", PONG_LOG_VERBOSE, ball);
 	free(ball);
 }
 

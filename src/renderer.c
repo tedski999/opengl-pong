@@ -5,6 +5,7 @@
 #include <GL/gl.h>
 
 int pong_renderer_init() {
+	PONG_LOG("Initializing renderer...", PONG_LOG_VERBOSE);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	PONG_LOG("Vendor: %s", PONG_LOG_INFO, glGetString(GL_VENDOR));
 	PONG_LOG("Renderer: %s", PONG_LOG_INFO, glGetString(GL_RENDERER));
@@ -21,6 +22,7 @@ void pong_renderer_drawrect(float x, float y, float w, float h) {
 }
 
 void pong_renderer_cleanup() {
+	PONG_LOG("Cleaning up renderer...", PONG_LOG_VERBOSE);
 
 }
 
