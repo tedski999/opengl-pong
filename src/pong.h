@@ -3,7 +3,6 @@
 
 int pong_init();
 void pong_start();
-void pong_stop();
 void pong_cleanup();
 
 #endif // PONG_PONG_H

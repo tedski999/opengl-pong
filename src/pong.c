@@ -1,4 +1,5 @@
 #include "pong.h"
+#include "events.h"
 #include "window.h"
 #include "ball.h"
 #include <stdio.h>
@@ -8,12 +9,15 @@
 #define NSEC_PER_SEC (1000000000)
 #define NSEC_PER_TICK (NSEC_PER_SEC / 60)
 
+static bool pong_quitCallback();
+
 static bool is_running;
 static struct PongBall *ball;
 
 // TODO: error handling
 int pong_init() {
 	pong_window_init();
+	pong_events_addCallback(PONG_EVENT_QUIT, &pong_quitCallback);
 	ball = pong_ball_create();
 	return 0;
 }
@@ -38,6 +42,7 @@ void pong_start() {
 			accumulated_time -= NSEC_PER_TICK;
 			pong_window_update();
 			pong_ball_update(ball);
+			pong_events_pollEvents();
 			tick_count++;
 		}
 
@@ -53,13 +58,13 @@ void pong_start() {
 	} while (is_running);
 }
 
-// TODO: this should be an event callback
-void pong_stop() {
-	is_running = false;
-}
-
 void pong_cleanup() {
 	pong_ball_destroy(ball);
 	pong_window_cleanup();
+}
+
+bool pong_quitCallback() {
+	is_running = false;
+	return true;
 }
 

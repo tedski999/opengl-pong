@@ -1,19 +1,17 @@
 #include "window.h"
 #include "renderer.h"
-#include "pong.h"
+#include "events.h"
 #include <GLFW/glfw3.h>
 
-static GLFWwindow *window;
+static void pong_window_closeCallback(GLFWwindow *context);
 
-void window_close_callback(GLFWwindow *context) {
-	pong_stop(); // TODO: replace with an event
-}
+static GLFWwindow *window;
 
 int pong_window_init() {
 	glfwInit();
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	window = glfwCreateWindow(640, 480, "Pong", NULL, NULL);
-	glfwSetWindowCloseCallback(window, window_close_callback);
+	glfwSetWindowCloseCallback(window, pong_window_closeCallback);
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 	pong_renderer_init();
@@ -30,7 +28,12 @@ void pong_window_render() {
 }
 
 void pong_window_cleanup() {
+	pong_renderer_cleanup();
 	glfwDestroyWindow(window);
 	glfwTerminate();
+}
+
+void pong_window_closeCallback(GLFWwindow *context) {
+	pong_events_pushEvent(PONG_EVENT_QUIT);
 }
 
