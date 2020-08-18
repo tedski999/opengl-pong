@@ -37,6 +37,7 @@ printConfig:
 	@echo "Compiler:        $(CC)"
 	@echo "Compiler flags:  $(CFLAGS)"
 	@echo "Linker flags:    $(LFLAGS)"
+	@echo "Defines:         $(DEFINES)"
 	@echo "Source files:    $(SRC_FILES)"
 	@echo ""
 
@@ -56,7 +57,7 @@ out/$(PLATFORM)/$(NAME): $(OBJ_FILES)
 
 obj/$(PLATFORM)/%.o: src/%.c Makefile
 	@echo "Compiling $< -> $@"
-	@$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+	@$(CC) $(CFLAGS) $(DEFINES:%=-D%) -MMD -MP -c $< -o $@
 
 -include $(DEP_FILES)
 

@@ -2,7 +2,7 @@
 #include "events.h"
 #include "window.h"
 #include "ball.h"
-#include <stdio.h>
+#include "log.h"
 #include <stdbool.h>
 #include <time.h>
 
@@ -16,6 +16,7 @@ static struct PongBall *ball;
 
 // TODO: error handling
 int pong_init() {
+	PONG_LOG_INIT();
 	pong_window_init();
 	pong_events_addCallback(PONG_EVENT_QUIT, &pong_quitCallback);
 	ball = pong_ball_create();
@@ -52,7 +53,7 @@ void pong_start() {
 
 		if (current_time.tv_sec > current_second) {
 			current_second = current_time.tv_sec;
-			printf("%itps %ifps\n", tick_count, draw_count);
+			PONG_LOG("%itps %ifps", PONG_LOG_INFO, tick_count, draw_count);
 			tick_count = draw_count = 0;
 		}
 	} while (is_running);
@@ -61,6 +62,7 @@ void pong_start() {
 void pong_cleanup() {
 	pong_ball_destroy(ball);
 	pong_window_cleanup();
+	PONG_LOG_CLEANUP();
 }
 
 bool pong_quitCallback() {
