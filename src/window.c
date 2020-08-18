@@ -4,19 +4,29 @@
 #include "log.h"
 #include <GLFW/glfw3.h>
 
+static void pong_window_errorCallback(int code, const char *description);
 static void pong_window_closeCallback(GLFWwindow *context);
 
 static GLFWwindow *window;
 
 int pong_window_init() {
 	PONG_LOG("Initializing GLFW window...", PONG_LOG_VERBOSE);
-	glfwInit();
+	glfwSetErrorCallback(pong_window_errorCallback);
+	if (!glfwInit()) {
+		PONG_LOG("Failed to initialize GLFW!", PONG_LOG_ERROR);
+		return 1;
+	}
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	window = glfwCreateWindow(640, 480, "Pong", NULL, NULL);
+	if (!window) {
+		PONG_LOG("Failed to create GLFW window!", PONG_LOG_ERROR);
+		return 1;
+	}
 	glfwSetWindowCloseCallback(window, pong_window_closeCallback);
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
-	pong_renderer_init();
+	if (pong_renderer_init())
+		return 1;
 	return 0;
 }
 
@@ -34,6 +44,10 @@ void pong_window_cleanup() {
 	pong_renderer_cleanup();
 	glfwDestroyWindow(window);
 	glfwTerminate();
+}
+
+void pong_window_errorCallback(int code, const char *description) {
+	PONG_LOG("GLFW ERROR %i: %s", PONG_LOG_WARNING, code, description);
 }
 
 void pong_window_closeCallback(GLFWwindow *context) {
