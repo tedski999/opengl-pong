@@ -3,6 +3,12 @@
 #include "events.h"
 #include "log.h"
 #include <GLFW/glfw3.h>
+#include <stdbool.h>
+
+#define WINDOW_WIDTH 640
+#define WINDOW_HEIGHT 480
+
+static bool safe_to_clean = false;
 
 static void pong_window_errorCallback(int code, const char *description);
 static void pong_window_closeCallback(GLFWwindow *context);
@@ -17,11 +23,12 @@ int pong_window_init() {
 		return 1;
 	}
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-	window = glfwCreateWindow(640, 480, "Pong", NULL, NULL);
+	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Pong", NULL, NULL);
 	if (!window) {
 		PONG_LOG("Failed to create GLFW window!", PONG_LOG_ERROR);
 		return 1;
 	}
+	safe_to_clean = true;
 	glfwSetWindowCloseCallback(window, pong_window_closeCallback);
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
@@ -36,14 +43,17 @@ void pong_window_update() {
 
 void pong_window_render() {
 	glfwSwapBuffers(window);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // FIXME: remove after adding modern opengl
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void pong_window_cleanup() {
-	PONG_LOG("Cleaning up GLFW window...", PONG_LOG_VERBOSE);
+	if (safe_to_clean) {
+		PONG_LOG("Cleaning up GLFW window...", PONG_LOG_VERBOSE);
+		glfwDestroyWindow(window);
+		glfwTerminate();
+	}
+
 	pong_renderer_cleanup();
-	glfwDestroyWindow(window);
-	glfwTerminate();
 }
 
 void pong_window_errorCallback(int code, const char *description) {

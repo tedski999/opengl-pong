@@ -6,8 +6,6 @@
 #include <stdbool.h>
 #include <time.h>
 
-#include <unistd.h>
-
 #define NSEC_PER_SEC 1000000000
 #define NSEC_PER_TICK NSEC_PER_SEC / 60
 #define MAX_NSEC_BEHIND NSEC_PER_SEC / 10
@@ -15,9 +13,9 @@
 static bool pong_quitCallback();
 
 static bool is_running;
+static bool safe_to_clean = false;
 static struct PongBall *ball;
 
-// TODO: error handling
 int pong_init() {
 	PONG_LOG_INIT();
 	PONG_LOG("Initializing game...", PONG_LOG_INFO);
@@ -25,6 +23,7 @@ int pong_init() {
 		return 1;
 	pong_events_addCallback(PONG_EVENT_QUIT, &pong_quitCallback);
 	ball = pong_ball_create();
+	safe_to_clean = true;
 	PONG_LOG("Initialization complete!", PONG_LOG_VERBOSE);
 	return 0;
 }
@@ -74,8 +73,12 @@ void pong_start() {
 }
 
 void pong_cleanup() {
-	PONG_LOG("Cleaning up...", PONG_LOG_INFO);
-	pong_ball_destroy(ball);
+	if (safe_to_clean) {
+		PONG_LOG("Cleaning up...", PONG_LOG_INFO);
+		pong_ball_destroy(ball);
+	}
+
+	pong_events_cleanup();
 	pong_window_cleanup();
 	PONG_LOG_CLEANUP();
 }
