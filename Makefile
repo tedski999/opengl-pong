@@ -6,11 +6,13 @@ PLATFORM	= linux
 ifeq ($(PLATFORM), linux)
 CC			= gcc
 CFLAGS		= -Wall -pedantic -Isrc -O2
-LFLAGS		= -lm -lOpenGL -lglfw
+LFLAGS		= -lm -lOpenGL -lglfw -lzip
 else ifeq ($(PLATFORM), windows)
 CC			= x86_64-w64-mingw32-gcc
+DLL_DIR		= /usr/x86_64-w64-mingw32/bin
+DLL_BINS	= glfw3.dll libwinpthread-1.dll
 CFLAGS		= -Wall -pedantic -Isrc -O2
-LFLAGS		= -lopengl32 -lglfw3dll
+LFLAGS		= -lopengl32 -lglfw3dll -lzip
 else
 $(error $(NAME) does not support a '$(PLATFORM)' build!)
 endif
@@ -45,6 +47,12 @@ printConfig:
 setup:
 	@echo "Creating necessary directories..."
 	@mkdir -p $(OBJ_TREE) out/$(PLATFORM)
+	@echo "Compressing resources into project..."
+	@zip -r out/$(PLATFORM)/data.wad res
+ifeq ($(PLATFORM), windows)
+	@echo "Adding .dll binaries..."
+	@cp $(DLL_BINS:%=$(DLL_DIR)/%) out/$(PLATFORM)
+endif
 
 .PHONY: clean
 clean:

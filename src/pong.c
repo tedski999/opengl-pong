@@ -1,6 +1,7 @@
 #include "pong.h"
 #include "events.h"
 #include "window.h"
+#include "resources.h"
 #include "ball.h"
 #include "log.h"
 #include <stdbool.h>
@@ -19,6 +20,8 @@ static struct PongBall *ball;
 int pong_init() {
 	PONG_LOG_INIT();
 	PONG_LOG("Initializing game...", PONG_LOG_INFO);
+	if (pong_resources_init())
+		return 1;
 	if (pong_window_init())
 		return 1;
 	pong_events_addCallback(PONG_EVENT_QUIT, &pong_quitCallback);
@@ -80,6 +83,7 @@ void pong_cleanup() {
 
 	pong_events_cleanup();
 	pong_window_cleanup();
+	pong_resources_cleanup();
 	PONG_LOG_CLEANUP();
 }
 
