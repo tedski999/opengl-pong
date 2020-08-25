@@ -92,7 +92,7 @@ void pong_cleanup() {
 }
 
 bool pong_internal_quitCallback() {
-	PONG_LOG("Pong quit callback exectuted!", PONG_LOG_VERBOSE);
+	PONG_LOG("Pong quit callback executed!", PONG_LOG_VERBOSE);
 	is_running = false;
 	return true;
 }
