@@ -3,6 +3,7 @@
 #include "log.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <time.h>
 
 #define NSEC_PER_SEC 1000000000
@@ -23,6 +24,7 @@ static const char *PONG_LOG_COLORS[PongLogUrgencyCount] = { "", "", "", "", "" }
 #define PONG_LOG_RESETCOLOR ""
 #endif
 
+static bool safe_to_clean = false;
 static const char *urgency_labels[PongLogUrgencyCount] = { "VERB", "INFO", "NOTE", "WARN", "ERRR" };
 static struct timespec init_time;
 
@@ -36,7 +38,8 @@ void pong_log_init() {
 
 	// TODO: log files
 
-	PONG_LOG("Logging initialized!", PONG_LOG_VERBOSE);
+	safe_to_clean = true;
+	PONG_LOG("Logging initialized!", PONG_LOG_INFO);
 }
 
 void pong_log(const char *message, enum PongLogUrgency urgency, ...) {
@@ -59,8 +62,10 @@ void pong_log(const char *message, enum PongLogUrgency urgency, ...) {
 }
 
 void pong_log_cleanup() {
-	PONG_LOG("Cleaning up logging system...", PONG_LOG_VERBOSE);
-	// Closing and compressing log files
+	if (safe_to_clean) {
+		PONG_LOG("Cleaning up logging system...", PONG_LOG_INFO);
+		// Closing and compressing log files
+	}
 }
 
 #else

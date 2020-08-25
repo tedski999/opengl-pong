@@ -9,7 +9,8 @@
 static bool safe_to_clean = false;
 
 int pong_renderer_init() {
-	PONG_LOG("Initializing renderer...", PONG_LOG_VERBOSE);
+	PONG_LOG("Initializing renderer...", PONG_LOG_INFO);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	PONG_LOG("Vendor: %s", PONG_LOG_INFO, glGetString(GL_VENDOR));
 	PONG_LOG("Renderer: %s", PONG_LOG_INFO, glGetString(GL_RENDERER));
@@ -21,9 +22,10 @@ int pong_renderer_init() {
 	const char *vert = pong_resources_get("basicVertShader");
 	pong_resources_load("res/shaders/basic.frag", "basicFragShader");
 	const char *frag = pong_resources_get("basicFragShader");
-	PONG_LOG(vert, PONG_LOG_INFO);
-	PONG_LOG(frag, PONG_LOG_INFO);
+	PONG_LOG(vert, PONG_LOG_VERBOSE);
+	PONG_LOG(frag, PONG_LOG_VERBOSE);
 
+	PONG_LOG("Renderer initialized!", PONG_LOG_VERBOSE);
 	return 0;
 }
 
@@ -38,7 +40,7 @@ void pong_renderer_drawrect(float x, float y, float w, float h) {
 
 void pong_renderer_cleanup() {
 	if (safe_to_clean) {
-		PONG_LOG("Cleaning up renderer...", PONG_LOG_VERBOSE);
+		PONG_LOG("Cleaning up renderer...", PONG_LOG_INFO);
 	}
 }
 

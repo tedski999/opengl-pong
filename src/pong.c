@@ -19,15 +19,18 @@ static struct PongBall *ball;
 
 int pong_init() {
 	PONG_LOG_INIT();
-	PONG_LOG("Initializing game...", PONG_LOG_INFO);
+	PONG_LOG("Initializing game...", PONG_LOG_NOTEWORTHY);
+
 	if (pong_resources_init())
 		return 1;
 	if (pong_window_init())
 		return 1;
+
 	pong_events_addCallback(PONG_EVENT_QUIT, &pong_quitCallback);
 	ball = pong_ball_create();
+
 	safe_to_clean = true;
-	PONG_LOG("Initialization complete!", PONG_LOG_VERBOSE);
+	PONG_LOG("Initialization complete!", PONG_LOG_INFO);
 	return 0;
 }
 
@@ -41,7 +44,7 @@ void pong_start() {
 	clock_gettime(CLOCK_MONOTONIC, &previous_time);
 	tick_count = draw_count = 0;
 	current_second = previous_time.tv_sec;
-	PONG_LOG("Entering main game loop...", PONG_LOG_INFO);
+	PONG_LOG("Entering main game loop...", PONG_LOG_NOTEWORTHY);
 	do {
 		clock_gettime(CLOCK_MONOTONIC, &current_time);
 		accumulated_time += ((current_time.tv_sec - previous_time.tv_sec) * NSEC_PER_SEC) + (current_time.tv_nsec - previous_time.tv_nsec);
@@ -72,12 +75,13 @@ void pong_start() {
 			tick_count = draw_count = 0;
 		}
 	} while (is_running);
-	PONG_LOG("Exited main game loop!", PONG_LOG_INFO);
+	PONG_LOG("Exited main game loop!", PONG_LOG_NOTEWORTHY);
 }
 
 void pong_cleanup() {
+	PONG_LOG("Cleaning up...", PONG_LOG_NOTEWORTHY);
 	if (safe_to_clean) {
-		PONG_LOG("Cleaning up...", PONG_LOG_INFO);
+		PONG_LOG("Cleaning up game...", PONG_LOG_INFO);
 		pong_ball_destroy(ball);
 	}
 

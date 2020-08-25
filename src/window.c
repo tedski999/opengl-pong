@@ -16,22 +16,29 @@ static void pong_window_closeCallback(GLFWwindow *context);
 static GLFWwindow *window;
 
 int pong_window_init() {
-	PONG_LOG("Initializing GLFW window...", PONG_LOG_VERBOSE);
+	PONG_LOG("Initializing GLFW window...", PONG_LOG_INFO);
+
 	glfwSetErrorCallback(pong_window_errorCallback);
 	if (!glfwInit()) {
 		PONG_LOG("Failed to initialize GLFW!", PONG_LOG_ERROR);
 		return 1;
 	}
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+	PONG_LOG("Opening window...", PONG_LOG_VERBOSE);
 	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Pong", NULL, NULL);
 	if (!window) {
 		PONG_LOG("Failed to create GLFW window!", PONG_LOG_ERROR);
 		return 1;
 	}
 	safe_to_clean = true;
+
+	PONG_LOG("Configuring window...", PONG_LOG_VERBOSE);
 	glfwSetWindowCloseCallback(window, pong_window_closeCallback);
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
+	PONG_LOG("GLFW window initialized!", PONG_LOG_VERBOSE);
+
 	if (pong_renderer_init())
 		return 1;
 	return 0;
@@ -48,7 +55,7 @@ void pong_window_render() {
 
 void pong_window_cleanup() {
 	if (safe_to_clean) {
-		PONG_LOG("Cleaning up GLFW window...", PONG_LOG_VERBOSE);
+		PONG_LOG("Cleaning up GLFW window...", PONG_LOG_INFO);
 		glfwDestroyWindow(window);
 		glfwTerminate();
 	}

@@ -12,10 +12,11 @@ static struct zip *zip_archive;
 static void *foo; //temp
 
 int pong_resources_init() {
-	PONG_LOG("Initializing resource manager...", PONG_LOG_VERBOSE);
+	PONG_LOG("Initializing resource manager...", PONG_LOG_INFO);
 
 	// TODO: method to ensure cwd is located at app root
 
+	PONG_LOG("Opening resource data archive...", PONG_LOG_VERBOSE);
     int err = 0;
     zip_archive = zip_open(RESOURCE_PATH, 0, &err);
 	if (err) {
@@ -26,12 +27,14 @@ int pong_resources_init() {
 	}
 
 	safe_to_clean = true;
+	PONG_LOG("Resource manager initialized!", PONG_LOG_VERBOSE);
 	return 0;
 }
 
 void pong_resources_load(const char *file_path, const char *resource_id) {
 	PONG_LOG("Loading resource at '%s'...", PONG_LOG_VERBOSE, file_path);
 
+	PONG_LOG("Querying resource...", PONG_LOG_VERBOSE);
 	struct zip_stat stat;
 	zip_stat_init(&stat);
 	if (zip_stat(zip_archive, file_path, 0, &stat)) {
@@ -39,6 +42,7 @@ void pong_resources_load(const char *file_path, const char *resource_id) {
 		return;
 	}
 
+	PONG_LOG("Opening resource...", PONG_LOG_VERBOSE);
 	char *data = malloc(sizeof (char) * stat.size + 1);
 	struct zip_file *file = zip_fopen(zip_archive, file_path, 0);
 	if (!file) {
@@ -46,6 +50,7 @@ void pong_resources_load(const char *file_path, const char *resource_id) {
 		return;
 	}
 
+	PONG_LOG("Reading resource...", PONG_LOG_VERBOSE);
 	zip_int64_t bytes_read;
 	zip_int64_t bytes_remaining = stat.size;
 	do {
@@ -59,6 +64,7 @@ void pong_resources_load(const char *file_path, const char *resource_id) {
 	data[stat.size] = '\0';
 
 	// TODO: add data to resource_map (char*->void* map) with key resource_id
+	PONG_LOG("Mapping resource...", PONG_LOG_VERBOSE);
 	foo = data; //temp
 }
 
@@ -73,7 +79,7 @@ void *pong_resources_get(const char *resource_id) {
 
 void pong_resources_cleanup() {
 	if (safe_to_clean) {
-		PONG_LOG("Cleaning up resource manager...", PONG_LOG_VERBOSE);
+		PONG_LOG("Cleaning up resource manager...", PONG_LOG_INFO);
 		// TODO: free the resource_map
 		zip_close(zip_archive);
 	}

@@ -20,7 +20,7 @@ static struct PongEventArray event_queue;
 static struct PongEventCallbackArray events_callbacks[PongEventTypeCount];
 
 void pong_events_addCallback(enum PongEventType event_type, PongEventCallback callback) {
-	PONG_LOG("Adding callback %p for event type %i...", PONG_LOG_VERBOSE, callback, event_type);
+	PONG_LOG("Adding callback %p for event type %i...", PONG_LOG_INFO, callback, event_type);
 	struct PongEventCallbackArray *event_callbacks = events_callbacks + event_type;
 	event_callbacks->callbacks = realloc(event_callbacks->callbacks, sizeof(PongEventCallback) * ++event_callbacks->length);
 	event_callbacks->callbacks[event_callbacks->length - 1] = callback;
@@ -38,7 +38,7 @@ void pong_events_pollEvents() {
 	if (!event_queue.length)
 		return;
 
-	PONG_LOG("Processing events...", PONG_LOG_VERBOSE);
+	PONG_LOG("Processing events (%i queued)...", PONG_LOG_VERBOSE, event_queue.length);
 	do {
 		PONG_LOG("Handling event type %i...", PONG_LOG_VERBOSE, event_queue.events->type);
 		struct PongEventCallbackArray *event_callbacks = events_callbacks + event_queue.events->type;
@@ -55,7 +55,7 @@ void pong_events_pollEvents() {
 }
 
 void pong_events_cleanup() {
-	PONG_LOG("Cleaning up events...", PONG_LOG_VERBOSE);
+	PONG_LOG("Cleaning up events...", PONG_LOG_INFO);
 	free(event_queue.events);
 	for (unsigned int i = 0; i < PongEventTypeCount; i++)
 		free(events_callbacks[i].callbacks);
