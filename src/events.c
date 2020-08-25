@@ -2,6 +2,7 @@
 #include "log.h"
 #include <stdlib.h>
 
+// TODO: event arguments
 struct PongEvent {
 	enum PongEventType type;
 };
@@ -27,6 +28,9 @@ void pong_events_addCallback(enum PongEventType event_type, PongEventCallback ca
 }
 
 // TODO: create pong_events_removeCallback(enum PongEventType event_type, PongEventCallback callback)
+void pong_events_removeCallback(enum PongEventType event_type, PongEventCallback callback) {
+
+}
 
 void pong_events_pushEvent(enum PongEventType event_type) {
 	PONG_LOG("Pushing event type %i...", PONG_LOG_VERBOSE, event_type);

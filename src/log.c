@@ -28,7 +28,7 @@ static bool safe_to_clean = false;
 static const char *urgency_labels[PongLogUrgencyCount] = { "VERB", "INFO", "NOTE", "WARN", "ERRR" };
 static struct timespec init_time;
 
-void pong_log_init() {
+void pong_log_internal_init() {
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	time_t now = time(NULL);
 	struct tm *time_raw = localtime(&now);
@@ -42,7 +42,7 @@ void pong_log_init() {
 	PONG_LOG("Logging initialized!", PONG_LOG_INFO);
 }
 
-void pong_log(const char *message, enum PongLogUrgency urgency, ...) {
+void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...) {
 	if (!PONG_VERBOSE_LOGS && urgency == PONG_LOG_VERBOSE)
 		return;
 
@@ -61,7 +61,7 @@ void pong_log(const char *message, enum PongLogUrgency urgency, ...) {
 	printf("%.4f [%s%s%s] %s%s%s\n", time_since_init, PONG_LOG_COLORS[urgency], urgency_labels[urgency], PONG_LOG_RESETCOLOR, PONG_LOG_COLORS[urgency], formatted_message, PONG_LOG_RESETCOLOR);
 }
 
-void pong_log_cleanup() {
+void pong_log_internal_cleanup() {
 	if (safe_to_clean) {
 		PONG_LOG("Cleaning up logging system...", PONG_LOG_INFO);
 		// Closing and compressing log files

@@ -3,9 +3,9 @@
 
 #ifdef PONG_LOGGING
 
-#define PONG_LOG_INIT() pong_log_init()
-#define PONG_LOG(message, ...) pong_log(message, __VA_ARGS__)
-#define PONG_LOG_CLEANUP() pong_log_cleanup()
+#define PONG_LOG_INIT() pong_log_internal_init()
+#define PONG_LOG(message, ...) pong_log_internal_log(message, __VA_ARGS__)
+#define PONG_LOG_CLEANUP() pong_log_internal_cleanup()
 
 enum PongLogUrgency {
 	PONG_LOG_VERBOSE,
@@ -16,9 +16,9 @@ enum PongLogUrgency {
 	PongLogUrgencyCount
 };
 
-void pong_log_init();
-void pong_log(const char *message, enum PongLogUrgency urgency, ...);
-void pong_log_cleanup();
+void pong_log_internal_init();
+void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...);
+void pong_log_internal_cleanup();
 
 #else
 

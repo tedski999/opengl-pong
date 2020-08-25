@@ -11,7 +11,7 @@
 #define NSEC_PER_TICK NSEC_PER_SEC / 60
 #define MAX_NSEC_BEHIND NSEC_PER_SEC / 10
 
-static bool pong_quitCallback();
+static bool pong_internal_quitCallback();
 
 static bool is_running;
 static bool safe_to_clean = false;
@@ -26,7 +26,7 @@ int pong_init() {
 	if (pong_window_init())
 		return 1;
 
-	pong_events_addCallback(PONG_EVENT_QUIT, &pong_quitCallback);
+	pong_events_addCallback(PONG_EVENT_QUIT, &pong_internal_quitCallback);
 	ball = pong_ball_create();
 
 	safe_to_clean = true;
@@ -91,7 +91,7 @@ void pong_cleanup() {
 	PONG_LOG_CLEANUP();
 }
 
-bool pong_quitCallback() {
+bool pong_internal_quitCallback() {
 	PONG_LOG("Pong quit callback exectuted!", PONG_LOG_VERBOSE);
 	is_running = false;
 	return true;
