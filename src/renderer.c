@@ -19,11 +19,23 @@ int pong_renderer_init() {
 	//temp - testing archived file inflation
 	PONG_LOG("Loading shaders...", PONG_LOG_VERBOSE);
 	pong_resources_load("res/shaders/basic.vert", "basicVertShader");
-	const char *vert = pong_resources_get("basicVertShader");
+	PONG_LOG(pong_resources_get("basicVertShader"), PONG_LOG_VERBOSE);
 	pong_resources_load("res/shaders/basic.frag", "basicFragShader");
-	const char *frag = pong_resources_get("basicFragShader");
-	PONG_LOG(vert, PONG_LOG_VERBOSE);
-	PONG_LOG(frag, PONG_LOG_VERBOSE);
+	PONG_LOG(pong_resources_get("basicFragShader"), PONG_LOG_VERBOSE);
+
+	PONG_LOG("Testing subsequent get...", PONG_LOG_VERBOSE);
+	PONG_LOG(pong_resources_get("basicVertShader"), PONG_LOG_VERBOSE);
+	PONG_LOG(pong_resources_get("basicFragShader"), PONG_LOG_VERBOSE);
+
+	pong_resources_increaseResourceMapMaxCount(5);
+	PONG_LOG("Testing resource map reallocation...", PONG_LOG_VERBOSE);
+	PONG_LOG(pong_resources_get("basicVertShader"), PONG_LOG_VERBOSE);
+	PONG_LOG(pong_resources_get("basicFragShader"), PONG_LOG_VERBOSE);
+
+	pong_resources_unload("basicFragShader");
+	PONG_LOG("Testing resource unloading...", PONG_LOG_VERBOSE);
+	PONG_LOG(pong_resources_get("basicVertShader"), PONG_LOG_VERBOSE);
+	PONG_LOG(pong_resources_get("basicFragShader"), PONG_LOG_VERBOSE);
 
 	PONG_LOG("Renderer initialized!", PONG_LOG_VERBOSE);
 	return 0;

@@ -1,3 +1,4 @@
+# TODO: static linking in windows
 
 ### CONFIG ###
 
@@ -10,7 +11,7 @@ LFLAGS		= -lm -lOpenGL -lglfw -lzip
 else ifeq ($(PLATFORM), windows)
 CC			= x86_64-w64-mingw32-gcc
 DLL_DIR		= /usr/x86_64-w64-mingw32/bin
-DLL_BINS	= glfw3.dll libwinpthread-1.dll
+DLL_BINS	= glfw3.dll libwinpthread-1.dll libzip.dll libssp-0.dll libbz2-1.dll liblzma-5.dll zlib1.dll
 CFLAGS		= -Wall -pedantic -Isrc -O2
 LFLAGS		= -lopengl32 -lglfw3dll -lzip
 else
