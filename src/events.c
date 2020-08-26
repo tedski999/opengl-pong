@@ -21,7 +21,7 @@ static struct PongEventArray event_queue;
 static struct PongEventCallbackArray events_callbacks[PongEventTypeCount];
 
 void pong_events_addCallback(enum PongEventType event_type, PongEventCallback callback) {
-	PONG_LOG("Adding callback %p for event type %i...", PONG_LOG_INFO, callback, event_type);
+	PONG_LOG("Adding callback %p for event type %i...", PONG_LOG_VERBOSE, callback, event_type);
 	struct PongEventCallbackArray *event_callbacks = events_callbacks + event_type;
 	event_callbacks->callbacks = realloc(event_callbacks->callbacks, sizeof(PongEventCallback) * ++event_callbacks->length);
 	event_callbacks->callbacks[event_callbacks->length - 1] = callback;

@@ -1,0 +1,126 @@
+# OpenGL Pong TODO List
+
+A list of various tasks still needed to be done.\
+This list is not exhaustive nor final. There may also be TODO and FIXME labeled comments scattered throughout the codebase.
+
+- [ ] **Build system**
+	- [x] Compiling and linking
+	- [x] Gathering source and object files automatically
+	- [x] Compiling only if necessary
+	- [x] Command-line definitions
+	- [x] Separate platform builds
+	- [x] Separate release/debug builds
+	- [x] Adding required binaries to build
+	- [x] Compressing and adding resources to build
+	- [ ] Windows/Mac/Linux build support
+	- [ ] Various build environment support
+	- [x] Cleaning
+- [x] **Main game loop**
+	- [x] Initializing function
+	- [x] Error handling during initialization
+	- [x] Loop until is_running is false
+	- [x] Separate rendering from updating game
+	- [x] Constant update tick delta-time (60TPS)
+	- [x] Handling V-Sync
+	- [x] Handling extremely low FPS
+	- [x] Cleanup function
+- [ ] **Logging**
+	- [x] Printing messages to console
+	- [x] printf() formatting
+	- [x] Message buffer overflow handling
+	- [x] Including time of log
+	- [x] Including urgency of log
+	- [x] Declaring date and time of execution
+	- [x] Use of defines/macros to prune logging from binary
+	- [x] Coloured logs
+	- [x] Verbose log pruning
+	- [ ] File output
+- [ ] **Resource management**
+	- [x] Opening ZIP archive with libzip
+	- [ ] Mapping resource IDs and loaded data
+		- [x] Generating a hash index from a resource ID using djb2
+		- [x] Handling hash index collisions
+		- [x] Dynamically sized hash table
+		- [ ] Shrinking hash table if deemed appropriate
+	- [x] Loading a resource by it's path
+		- [x] Reading resource data in from ZIP archive
+		- [x] Mapping resource ID to resource data
+	- [x] Unloading a resource by it's resource ID
+	- [x] Returning a resource by it's resource ID
+	- [x] Cleaning up the resource manager
+		- [x] Deallocating remaining resources
+		- [x] Closing the ZIP archive
+- [ ] **Window management**
+	- [x] Opening and configuring the GLFW window
+	- [x] Cleanly closing the GLFW window
+	- [x] Using V-Sync
+	- [x] Polling events and swapping frame buffers
+	- [ ] Handling various window events and input
+- [ ] **Rendering**
+	- [ ] Loading OpenGL function pointers with GLAD
+	- [ ] Shaders
+		- [ ] Compiling and linking
+		- [ ] Orthographic projection
+		- [ ] World transformations
+		- [ ] Colours with fragment shaders
+	- [ ] Rendering rectangles
+		- [ ] Drawing rectangle vertex arrays
+		- [ ] Applying vertices transformations
+		- [ ] Applying fragment colours
+	- [ ] Rendering text
+		- [ ] Loading fonts
+		- [ ] Drawing text
+		- [ ] Scaling text
+- [ ] **Event handling**
+	- [ ] Event callbacks
+		- [x] Adding callbacks
+		- [ ] Removing callbacks
+		- [x] Clearing all callbacks
+	- [ ] Pushing new events
+		- [x] Adding callbacks to an event queue
+		- [ ] Accepting event arguments
+	- [ ] Polling queued events
+		- [x] Looping through queued events
+		- [x] Executing relevant callbacks
+		- [ ] Passing event arguments
+		- [x] Breaking if event is handled
+		- [ ] Clearing allocated event queue space
+- [ ] **Input handling**
+	- [ ] Receiving input from GLFW
+	- [ ] Distributing input to relevant functions
+	- [ ] Custom user input mapping?
+	- [ ] Various input device support?
+- [ ] **Gameplay**
+	- [ ] Ball
+		- [ ] Drawing
+		- [ ] Velocity
+		- [ ] Collision
+		- [ ] Win/Lose condition
+	- [ ] Paddle
+		- [ ] Drawing
+		- [ ] Movement with input
+		- [ ] Bounded to screen
+	- [ ] Computer player AI
+		- [ ] Controls paddle
+		- [ ] Predicts ball position
+		- [ ] Overrides user input events?
+		- [ ] Difficulty?
+	- [ ] User interface
+		- [ ] Score text
+		- [ ] Win/Lose text
+		- [ ] Menu system?
+- [ ] **Other**
+	- [ ] Write up code documentation
+	- [ ] Write up a README
+		- [ ] Description
+		- [ ] Building and running
+		- [ ] References
+	- [ ] Error handling
+		- [x] Handle errors during initialization
+		- [ ] Handle errors during main game loop
+		- [ ] Handle malloc()/free() errors
+		- [ ] Hunt down any memory leaks
+		- [ ] Fix possible crashes occurring *while handling errors*
+		- [ ] Error-out after resource loading/getting failure
+	- [ ] Run a static code analyser over project
+

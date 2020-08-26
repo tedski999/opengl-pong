@@ -39,7 +39,7 @@ void pong_log_internal_init() {
 	// TODO: log files
 
 	safe_to_clean = true;
-	PONG_LOG("Logging initialized!", PONG_LOG_INFO);
+	PONG_LOG("Logging initialized!", PONG_LOG_VERBOSE);
 }
 
 void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...) {
