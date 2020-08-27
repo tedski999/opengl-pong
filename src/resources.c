@@ -1,4 +1,5 @@
 #include "resources.h"
+#include "core.h"
 #include "log.h"
 #include <zip.h>
 #include <stdlib.h>
@@ -6,7 +7,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#define RESOURCE_PATH "data.wad"
 #define INITIAL_MAX_RESOURCES_IN_MAP 8
 
 struct PongResourceMap {
@@ -30,11 +30,11 @@ int pong_resources_init() {
 
 	PONG_LOG("Opening resource data archive...", PONG_LOG_VERBOSE);
     int err = 0;
-    zip_archive = zip_open(RESOURCE_PATH, 0, &err);
+    zip_archive = zip_open(PONG_RESOURCE_PATH, 0, &err);
 	if (err) {
 		struct zip_error error;
 		zip_error_init_with_code(&error, err);
-		PONG_LOG("An error occurred while trying to read '%s': %s", PONG_LOG_ERROR, RESOURCE_PATH, zip_error_strerror(&error));
+		PONG_LOG("An error occurred while trying to read '%s': %s", PONG_LOG_ERROR, PONG_RESOURCE_PATH, zip_error_strerror(&error));
 		return 1;
 	}
 	safe_to_clean = true;

@@ -1,4 +1,5 @@
 #include "pong.h"
+#include "core.h"
 #include "events.h"
 #include "window.h"
 #include "resources.h"
@@ -7,7 +8,6 @@
 #include <stdbool.h>
 #include <time.h>
 
-#define NSEC_PER_SEC 1000000000
 #define NSEC_PER_TICK NSEC_PER_SEC / 60
 #define MAX_NSEC_BEHIND NSEC_PER_SEC / 10
 

@@ -1,12 +1,10 @@
 #include "window.h"
+#include "core.h"
 #include "renderer.h"
 #include "events.h"
 #include "log.h"
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
-
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 480
 
 static void pong_window_internal_errorCallback(int code, const char *description);
 static void pong_window_internal_closeCallback(GLFWwindow *context);
@@ -16,16 +14,20 @@ static GLFWwindow *window;
 
 int pong_window_init() {
 	PONG_LOG("Initializing GLFW window...", PONG_LOG_INFO);
-
+	PONG_LOG("Using GLFW v%i.%i", PONG_LOG_INFO, GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR);
 	glfwSetErrorCallback(pong_window_internal_errorCallback);
 	if (!glfwInit()) {
 		PONG_LOG("Failed to initialize GLFW!", PONG_LOG_ERROR);
 		return 1;
 	}
+
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, PONG_OPENGL_VERSION_MAJOR_MIN);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, PONG_OPENGL_VERSION_MINOR_MIN);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	PONG_LOG("Opening window...", PONG_LOG_VERBOSE);
-	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Pong", NULL, NULL);
+	window = glfwCreateWindow(PONG_WINDOW_WIDTH, PONG_WINDOW_HEIGHT, "Pong", NULL, NULL);
 	if (!window) {
 		PONG_LOG("Failed to create GLFW window!", PONG_LOG_ERROR);
 		return 1;
@@ -49,7 +51,7 @@ void pong_window_update() {
 
 void pong_window_render() {
 	glfwSwapBuffers(window);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	pong_renderer_clearScreen();
 }
 
 void pong_window_cleanup() {

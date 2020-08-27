@@ -1,19 +1,13 @@
 #ifdef PONG_LOGGING
 
 #include "log.h"
+#include "core.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <time.h>
 
-#define NSEC_PER_SEC 1000000000
 #define PONG_LOG_MESG_BUF_SIZE 256
-
-#ifdef PONG_VERBOSE_LOGS
-#define PONG_VERBOSE_LOGS 1
-#else
-#define PONG_VERBOSE_LOGS 0
-#endif
 
 // TODO: can PONG_LOG_COLORS be preprocessed?
 #ifdef PONG_COLORED_LOGS

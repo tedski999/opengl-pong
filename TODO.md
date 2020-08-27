@@ -57,15 +57,15 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 	- [x] Polling events and swapping frame buffers
 	- [ ] Handling various window events and input
 - [ ] **Rendering**
-	- [ ] Loading OpenGL function pointers with GLAD
-	- [ ] Shaders
-		- [ ] Compiling and linking
-		- [ ] Orthographic projection
-		- [ ] World transformations
+	- [x] Loading OpenGL function pointers with GLAD
+	- [x] Shaders
+		- [x] Compiling and linking
+		- [x] Orthographic projection
+		- [x] World transformations
 		- [ ] Colours with fragment shaders
 	- [ ] Rendering rectangles
-		- [ ] Drawing rectangle vertex arrays
-		- [ ] Applying vertices transformations
+		- [x] Drawing rectangle vertex arrays
+		- [x] Applying vertices transformations
 		- [ ] Applying fragment colours
 	- [ ] Rendering text
 		- [ ] Loading fonts
