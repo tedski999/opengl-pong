@@ -36,6 +36,7 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 	- [x] Verbose log pruning
 	- [ ] File output
 - [ ] **Resource management**
+	- [x] Loading resources from any working directory
 	- [x] Opening ZIP archive with libzip
 	- [ ] Mapping resource IDs and loaded data
 		- [x] Generating a hash index from a resource ID using djb2
