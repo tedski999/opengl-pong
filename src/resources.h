@@ -5,7 +5,7 @@ int pong_resources_init();
 void pong_resources_load(const char *file_path, const char *resource_id);
 void pong_resources_unload(const char *resource_id);
 void *pong_resources_get(const char *resource_id);
-void pong_resources_increaseResourceMapMaxCount(unsigned int count_increase);
+void pong_resources_changeResourceMapCount(int count_change);
 void pong_resources_cleanup();
 
 #endif // PONG_RESOURCES_H

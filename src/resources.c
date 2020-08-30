@@ -15,7 +15,9 @@
 #endif
 
 #define PONG_RESOURCES_ABSOLUTE_PATH_BUF_SIZE 256
-#define PONG_INITIAL_MAX_RESOURCES_IN_MAP 8
+#define PONG_RESOURCES_MAP_INITIAL_COUNT 8
+#define PONG_RESOURCES_MAP_MAX_USED_BUCKET_RATIO 0.8f
+#define PONG_RESOURCES_MAP_AUTOMATIC_COUNT_INCREASE 8
 
 struct PongResourceMap {
 	const char *key;
@@ -58,15 +60,15 @@ int pong_resources_init() {
 	safe_to_clean = true;
 
 	PONG_LOG("Initializing resource map...", PONG_LOG_VERBOSE);
-	resource_map = calloc(1, sizeof (struct PongResourceMap) * PONG_INITIAL_MAX_RESOURCES_IN_MAP);
-	resource_map_count_max = PONG_INITIAL_MAX_RESOURCES_IN_MAP;
+	resource_map = calloc(1, sizeof (struct PongResourceMap) * PONG_RESOURCES_MAP_INITIAL_COUNT);
+	resource_map_count_max = PONG_RESOURCES_MAP_INITIAL_COUNT;
 
 	PONG_LOG("Resource manager initialized!", PONG_LOG_VERBOSE);
 	return 0;
 }
 
 void pong_resources_load(const char *file_path, const char *resource_id) {
-	PONG_LOG("Loading resource at '%s'...", PONG_LOG_VERBOSE, file_path);
+	PONG_LOG("Loading resource at '%s' as '%s'...", PONG_LOG_VERBOSE, file_path, resource_id);
 
 	PONG_LOG("Querying resource...", PONG_LOG_VERBOSE);
 	struct zip_stat stat;
@@ -98,12 +100,13 @@ void pong_resources_load(const char *file_path, const char *resource_id) {
 	data[stat.size] = '\0';
 
 	PONG_LOG("Mapping resource...", PONG_LOG_VERBOSE);
-	resource_map_count_cur += 1;
-	if (resource_map_count_cur > resource_map_count_max)
-		pong_resources_increaseResourceMapMaxCount(resource_map_count_max);
+	if (++resource_map_count_cur > resource_map_count_max * PONG_RESOURCES_MAP_MAX_USED_BUCKET_RATIO) {
+		PONG_LOG("Resource map is over-encumbered (%i/%i buckets used), automatically adding more buckets...", PONG_LOG_WARNING, resource_map_count_cur - 1, resource_map_count_max);
+		pong_resources_changeResourceMapCount(PONG_RESOURCES_MAP_AUTOMATIC_COUNT_INCREASE);
+	}
 	unsigned int hash_index = pong_resources_internal_getResourceMapHashIndex(resource_id);
 	if (resource_map[hash_index].key) {
-		PONG_LOG("Resource ID '%s' already exists, overwriting loaded data...", PONG_LOG_WARNING, resource_id);
+		PONG_LOG("Resource ID '%s' already exists, overwriting loaded data with new resource '%s'...", PONG_LOG_WARNING, resource_map[hash_index].key, resource_id);
 		pong_resources_internal_deallocateResource(hash_index);
 	}
 	resource_map[hash_index] = (struct PongResourceMap) { resource_id, data };
@@ -111,8 +114,6 @@ void pong_resources_load(const char *file_path, const char *resource_id) {
 	PONG_LOG("Resource '%s' successfully loaded and mapped to '%s'...", PONG_LOG_VERBOSE, file_path, resource_id);
 }
 
-// FIXME: overtime the bucket count may increase but never decrease.
-// maybe automatically shrink resource_map if deemed appropriate?
 void pong_resources_unload(const char *resource_id) {
 	PONG_LOG("Deallocating resource '%s'...", PONG_LOG_VERBOSE, resource_id);
 	unsigned int hash_index = pong_resources_internal_getResourceMapHashIndex(resource_id);
@@ -124,11 +125,17 @@ void *pong_resources_get(const char *resource_id) {
 	return resource_map[hash_index].data;
 }
 
-void pong_resources_increaseResourceMapMaxCount(unsigned int count_increase) {
-	PONG_LOG("Increasing resource map bucket count from %i to %i...", PONG_LOG_VERBOSE, resource_map_count_max, resource_map_count_max + count_increase);
+void pong_resources_changeResourceMapCount(int count_change) {
+	if ((int) resource_map_count_max + count_change < resource_map_count_cur) {
+		PONG_LOG("Could not change resource map bucket count from %i to %i! The resource map is currently %i/%i full.", PONG_LOG_WARNING,
+			resource_map_count_max, (int) resource_map_count_max + count_change, resource_map_count_cur, resource_map_count_max);
+		return;
+	}
+
+	PONG_LOG("Changing resource map bucket count from %i to %i...", PONG_LOG_VERBOSE, resource_map_count_max, resource_map_count_max + count_change);
 	struct PongResourceMap *old_resource_map = resource_map;
 	unsigned int old_resource_map_count = resource_map_count_max;
-	resource_map_count_max += count_increase;
+	resource_map_count_max += count_change;
 	resource_map = calloc(1, sizeof (struct PongResourceMap) * resource_map_count_max);
 
 	PONG_LOG("Rehashing resource map entries...", PONG_LOG_VERBOSE);
@@ -140,7 +147,7 @@ void pong_resources_increaseResourceMapMaxCount(unsigned int count_increase) {
 	}
 
 	free(old_resource_map);
-	PONG_LOG("Successfully increased size of resource map!", PONG_LOG_VERBOSE);
+	PONG_LOG("Successfully changed size of resource map!", PONG_LOG_VERBOSE);
 }
 
 void pong_resources_cleanup() {
@@ -155,11 +162,12 @@ void pong_resources_cleanup() {
 
 // Using djb2 hashing algorithm because I'm that basic
 unsigned int pong_resources_internal_getResourceMapHashIndex(const char *key) {
-	unsigned int char_code, hash_index = 5381;
-	while ((char_code = *key++))
-		hash_index = ((hash_index << 5) + hash_index) + char_code;
+	const char *key_char = key;
+	unsigned int hash_index = 5381;
+	while (*key_char++)
+		hash_index = ((hash_index << 5) + hash_index) + *key_char;
 	hash_index %= resource_map_count_max;
-	while (resource_map[hash_index].key && !strcmp(resource_map[hash_index].key, key))
+	while (resource_map[hash_index].key && strcmp(resource_map[hash_index].key, key))
 		hash_index = (hash_index + 1) % resource_map_count_max;
 	return hash_index;
 }
@@ -168,5 +176,6 @@ void pong_resources_internal_deallocateResource(unsigned int hash_index) {
 	free(resource_map[hash_index].data);
 	resource_map[hash_index].key = NULL;
 	resource_map[hash_index].data = NULL;
+	resource_map_count_cur -= 1;
 }
 
