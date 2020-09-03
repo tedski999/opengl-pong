@@ -27,9 +27,18 @@ void pong_events_addCallback(enum PongEventType event_type, PongEventCallback ca
 	event_callbacks->callbacks[event_callbacks->length - 1] = callback;
 }
 
-// TODO: create pong_events_removeCallback(enum PongEventType event_type, PongEventCallback callback)
 void pong_events_removeCallback(enum PongEventType event_type, PongEventCallback callback) {
-
+	PONG_LOG("Removing callback %p from event type %i...", PONG_LOG_VERBOSE, callback, event_type);
+	struct PongEventCallbackArray *event_callbacks = events_callbacks + event_type;
+	unsigned int shift, occurences;
+	for (unsigned int i = shift = occurences = 0; i < event_callbacks->length; i++) {
+		if (event_callbacks->callbacks[i] != callback)
+			event_callbacks->callbacks[shift++] = event_callbacks->callbacks[i];
+		else
+			occurences++;
+	}
+	event_callbacks->length -= occurences;
+	event_callbacks->callbacks = realloc(event_callbacks->callbacks, sizeof (PongEventCallback) * event_callbacks->length);
 }
 
 void pong_events_pushEvent(enum PongEventType event_type) {
@@ -44,17 +53,20 @@ void pong_events_pollEvents() {
 
 	PONG_LOG("Processing events (%i queued)...", PONG_LOG_VERBOSE, event_queue.length);
 	do {
-		PONG_LOG("Handling event type %i...", PONG_LOG_VERBOSE, event_queue.events->type);
-		struct PongEventCallbackArray *event_callbacks = events_callbacks + event_queue.events->type;
+		struct PongEvent *event = event_queue.events + --event_queue.length;
+		PONG_LOG("Handling event type %i...", PONG_LOG_VERBOSE, event->type);
+		struct PongEventCallbackArray *event_callbacks = events_callbacks + event->type;
 		for (unsigned int i = 0; i < event_callbacks->length; i++) {
 			PONG_LOG("Executing callback %p...", PONG_LOG_VERBOSE, event_callbacks->callbacks + i);
-			if (event_callbacks->callbacks[i]())
+			if (event_callbacks->callbacks[i]()) {
+				PONG_LOG("Event type %i handled.", PONG_LOG_VERBOSE, event->type);
 				break;
+			}
 		}
-		PONG_LOG("Event type %i handled.", PONG_LOG_VERBOSE, event_queue.events->type);
-	} while (--event_queue.length);
+	} while (event_queue.length);
 	
 	PONG_LOG("All events handled.", PONG_LOG_VERBOSE);
+	free(event_queue.events);
 	event_queue.events = NULL;
 }
 

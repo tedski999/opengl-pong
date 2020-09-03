@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 static void pong_window_internal_errorCallback(int code, const char *description);
+static void pong_window_internal_focusCallback(GLFWwindow *context, int is_focused);
 static void pong_window_internal_closeCallback(GLFWwindow *context);
 
 static bool safe_to_clean = false;
@@ -36,6 +37,7 @@ int pong_window_init() {
 
 	PONG_LOG("Configuring window...", PONG_LOG_VERBOSE);
 	glfwSetWindowCloseCallback(window, pong_window_internal_closeCallback);
+	glfwSetWindowFocusCallback(window, pong_window_internal_focusCallback);
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 	PONG_LOG("GLFW window initialized!", PONG_LOG_VERBOSE);
@@ -66,6 +68,11 @@ void pong_window_cleanup() {
 
 void pong_window_internal_errorCallback(int code, const char *description) {
 	PONG_LOG("GLFW ERROR %i: %s", PONG_LOG_WARNING, code, description);
+}
+
+void pong_window_internal_focusCallback(GLFWwindow *context, int is_focused) {
+	PONG_LOG("GLFW window focus callback executed!", PONG_LOG_VERBOSE);
+	pong_events_pushEvent(PONG_EVENT_FOCUS);
 }
 
 void pong_window_internal_closeCallback(GLFWwindow *context) {

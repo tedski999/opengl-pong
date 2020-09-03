@@ -6,6 +6,7 @@
 typedef bool (*PongEventCallback)();
 
 enum PongEventType {
+	PONG_EVENT_FOCUS,
 	PONG_EVENT_QUIT,
 	PongEventTypeCount
 };

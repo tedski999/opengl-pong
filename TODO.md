@@ -35,14 +35,13 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 	- [x] Coloured logs
 	- [x] Verbose log pruning
 	- [ ] File output
-- [ ] **Resource management**
+- [x] **Resource management**
 	- [x] Loading resources from any working directory
 	- [x] Opening ZIP archive with libzip
-	- [ ] Mapping resource IDs and loaded data
+	- [x] Mapping resource IDs and loaded data
 		- [x] Generating a hash index from a resource ID using djb2
 		- [x] Handling hash index collisions
 		- [x] Dynamically sized hash table
-		- [ ] Shrinking hash table if deemed appropriate
 	- [x] Loading a resource by it's path
 		- [x] Reading resource data in from ZIP archive
 		- [x] Mapping resource ID to resource data
@@ -73,9 +72,9 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 		- [ ] Drawing text
 		- [ ] Scaling text
 - [ ] **Event handling**
-	- [ ] Event callbacks
+	- [x] Event callbacks
 		- [x] Adding callbacks
-		- [ ] Removing callbacks
+		- [x] Removing callbacks
 		- [x] Clearing all callbacks
 	- [ ] Pushing new events
 		- [x] Adding callbacks to an event queue
@@ -85,7 +84,7 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 		- [x] Executing relevant callbacks
 		- [ ] Passing event arguments
 		- [x] Breaking if event is handled
-		- [ ] Clearing allocated event queue space
+		- [x] Clearing allocated event queue space
 - [ ] **Input handling**
 	- [ ] Receiving input from GLFW
 	- [ ] Distributing input to relevant functions
