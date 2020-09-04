@@ -2,11 +2,13 @@
 
 #include "log.h"
 #include "core.h"
+#include "files.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <time.h>
 
+#define PONG_LOG_TIME_BUF_SIZE 64
 #define PONG_LOG_MESG_BUF_SIZE 256
 
 // TODO: can PONG_LOG_COLORS be preprocessed?
@@ -18,7 +20,6 @@ static const char *PONG_LOG_COLORS[PongLogUrgencyCount] = { "", "", "", "", "" }
 #define PONG_LOG_RESETCOLOR ""
 #endif
 
-static bool safe_to_clean = false;
 static const char *urgency_labels[PongLogUrgencyCount] = { "VERB", "INFO", "NOTE", "WARN", "ERRR" };
 static struct timespec init_time;
 
@@ -26,13 +27,10 @@ void pong_log_internal_init() {
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	time_t now = time(NULL);
 	struct tm *time_raw = localtime(&now);
-	char time_string[PONG_LOG_MESG_BUF_SIZE];
-	strftime(time_string, sizeof time_string, "%F %T %Z", time_raw);
+	char time_string[PONG_LOG_TIME_BUF_SIZE];
+	strftime(time_string, sizeof (char[PONG_LOG_TIME_BUF_SIZE]), "%F %T %Z", time_raw);
 	printf("%s\n", time_string);
-
-	// TODO: log files
-
-	safe_to_clean = true;
+	pong_files_deleteFile(PONG_LOG_FILE);
 	PONG_LOG("Logging initialized!", PONG_LOG_VERBOSE);
 }
 
@@ -47,19 +45,19 @@ void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...
 	char formatted_message[PONG_LOG_MESG_BUF_SIZE];
 	va_list args;
 	va_start(args, urgency);
-	int formatted_message_len = vsnprintf(formatted_message, sizeof formatted_message, message, args);
+	vsnprintf(formatted_message, sizeof (char[PONG_LOG_MESG_BUF_SIZE]), message, args);
 	va_end(args);
-	if (formatted_message_len > PONG_LOG_MESG_BUF_SIZE - 1)
-		for (char *str = formatted_message + PONG_LOG_MESG_BUF_SIZE - 4; *str != '\0'; *(str++) = '.');
 
-	printf("%.4f [%s%s%s] %s%s%s\n", time_since_init, PONG_LOG_COLORS[urgency], urgency_labels[urgency], PONG_LOG_RESETCOLOR, PONG_LOG_COLORS[urgency], formatted_message, PONG_LOG_RESETCOLOR);
-}
-
-void pong_log_internal_cleanup() {
-	if (safe_to_clean) {
-		PONG_LOG("Cleaning up logging system...", PONG_LOG_INFO);
-		// Closing and compressing log files
+	char log_string[PONG_LOG_MESG_BUF_SIZE];
+	int log_string_len = snprintf(log_string, sizeof (char[PONG_LOG_MESG_BUF_SIZE]), "%.4f %s[%s] %s%s\n", time_since_init, PONG_LOG_COLORS[urgency], urgency_labels[urgency], formatted_message, PONG_LOG_RESETCOLOR);
+	if (log_string_len >= PONG_LOG_MESG_BUF_SIZE) {
+		log_string[PONG_LOG_MESG_BUF_SIZE - 2] = '\n';
+		char *str = log_string + PONG_LOG_MESG_BUF_SIZE - 5;
+		do *str = '.'; while (*++str != '\n');
 	}
+
+	printf(log_string);
+	pong_files_appendData(PONG_LOG_FILE, log_string);
 }
 
 #else

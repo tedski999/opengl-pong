@@ -3,12 +3,15 @@
 
 #define PONG_WINDOW_WIDTH 640
 #define PONG_WINDOW_HEIGHT 480
+#define PONG_LOG_FILE "log.txt"
 #define PONG_RESOURCES_FILE "data.wad"
 
 #if defined (_WIN32)
 #define PONG_PLATFORM_WINDOWS 1
+#define PONG_PATH_DELIMITER '\\'
 #elif defined (__linux__)
 #define PONG_PLATFORM_LINUX 1
+#define PONG_PATH_DELIMITER '/'
 #else
 #error Pong does not currently support your operating system!
 #endif

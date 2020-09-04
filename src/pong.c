@@ -1,5 +1,6 @@
 #include "pong.h"
 #include "core.h"
+#include "files.h"
 #include "events.h"
 #include "window.h"
 #include "resources.h"
@@ -18,9 +19,10 @@ static bool safe_to_clean = false;
 static struct PongBall *ball;
 
 int pong_init() {
-	PONG_LOG_INIT();
 	PONG_LOG("Initializing game...", PONG_LOG_NOTEWORTHY);
 
+	if (pong_files_init())
+		return 1;
 	if (pong_resources_init())
 		return 1;
 	if (pong_window_init())
@@ -88,7 +90,6 @@ void pong_cleanup() {
 	pong_events_cleanup();
 	pong_window_cleanup();
 	pong_resources_cleanup();
-	PONG_LOG_CLEANUP();
 }
 
 bool pong_internal_quitCallback() {

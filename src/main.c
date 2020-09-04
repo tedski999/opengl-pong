@@ -2,11 +2,17 @@
 #include "log.h"
 
 int main(int argc, char *argv[]) {
-	if (!pong_init())
+	int exit_code = 0;
+
+	PONG_LOG_INIT();
+	if (!pong_init()) {
 		pong_start();
-	else
+	} else {
 		PONG_LOG("Failed to initialize game, aborting...", PONG_LOG_WARNING);
+		exit_code = 1;
+	}
+
 	pong_cleanup();
-	return 0;
+	return exit_code;
 }
 

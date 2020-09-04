@@ -1,20 +1,12 @@
 #include "resources.h"
 #include "core.h"
+#include "files.h"
 #include "log.h"
 #include <zip.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 
-#if PONG_PLATFORM_WINDOWS
-#include <windows.h>
-#define PONG_RESOURCE_PATH_DELIMITER '\\'
-#elif PONG_PLATFORM_LINUX
-#include <unistd.h>
-#define PONG_RESOURCE_PATH_DELIMITER '/'
-#endif
-
-#define PONG_RESOURCES_ABSOLUTE_PATH_BUF_SIZE 256
 #define PONG_RESOURCES_MAP_INITIAL_COUNT 8
 #define PONG_RESOURCES_MAP_MAX_USED_BUCKET_RATIO 0.8f
 #define PONG_RESOURCES_MAP_AUTOMATIC_COUNT_INCREASE 8
@@ -28,7 +20,6 @@ static unsigned int pong_resources_internal_getResourceMapHashIndex(const char *
 static void pong_resources_internal_deallocateResource(unsigned int hash_index);
 
 static bool safe_to_clean = false;
-static char resources_absolute_path[PONG_RESOURCES_ABSOLUTE_PATH_BUF_SIZE];
 static struct zip *zip_archive;
 static struct PongResourceMap *resource_map;
 static unsigned int resource_map_count_cur;
@@ -37,24 +28,17 @@ static unsigned int resource_map_count_max;
 int pong_resources_init() {
 	PONG_LOG("Initializing resource manager...", PONG_LOG_INFO);
 
-	// FIXME: buffer overflow with long (>250 char) paths
-	PONG_LOG("Locating resource data archive...", PONG_LOG_VERBOSE);
-#ifdef PONG_PLATFORM_WINDOWS
-	GetModuleFileNameA(NULL, resources_absolute_path, PONG_RESOURCES_ABSOLUTE_PATH_BUF_SIZE);
-#elif PONG_PLATFORM_LINUX
-	readlink("/proc/self/exe", resources_absolute_path, PONG_RESOURCES_ABSOLUTE_PATH_BUF_SIZE);
-#endif
-	char *path_filename = strrchr(resources_absolute_path, PONG_RESOURCE_PATH_DELIMITER);
-	path_filename[1] = '\0';
-	strcat(resources_absolute_path, PONG_RESOURCES_FILE);
+	// FIXME: c string manip is difficult, fails with path lengths over 256
+	char resources_filepath[256];
+	strncat(strncpy(resources_filepath, pong_files_getDataDirectoryPath(), 255), PONG_RESOURCES_FILE, 256);
 
-	PONG_LOG("Opening resource data archive at '%s'...", PONG_LOG_VERBOSE, resources_absolute_path);
-    int err = 0;
-    zip_archive = zip_open(resources_absolute_path, 0, &err);
+	PONG_LOG("Opening resource data archive at '%s'...", PONG_LOG_VERBOSE, resources_filepath);
+	int err = 0;
+	zip_archive = zip_open(resources_filepath, 0, &err);
 	if (err) {
 		struct zip_error error;
 		zip_error_init_with_code(&error, err);
-		PONG_LOG("An error occurred while trying to open '%s': %s", PONG_LOG_ERROR, resources_absolute_path, zip_error_strerror(&error));
+		PONG_LOG("An error occurred while trying to open '%s': %s", PONG_LOG_ERROR, resources_filepath, zip_error_strerror(&error));
 		return 1;
 	}
 	safe_to_clean = true;
@@ -83,6 +67,7 @@ void pong_resources_load(const char *file_path, const char *resource_id) {
 	struct zip_file *file = zip_fopen(zip_archive, file_path, 0);
 	if (!file) {
 		PONG_LOG("An error occurred while trying to open requested resource '%s': %s", PONG_LOG_WARNING, file_path, zip_strerror(zip_archive));
+		free(data);
 		return;
 	}
 
