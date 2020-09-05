@@ -2,9 +2,10 @@
 #include "log.h"
 
 int main(int argc, char *argv[]) {
-	int exit_code = 0;
+	if (PONG_LOG_INIT())
+		return 1;
 
-	PONG_LOG_INIT();
+	int exit_code = 0;
 	if (!pong_init()) {
 		pong_start();
 	} else {
@@ -13,6 +14,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	pong_cleanup();
+	PONG_LOG_CLEANUP();
 	return exit_code;
 }
 

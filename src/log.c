@@ -2,11 +2,19 @@
 
 #include "log.h"
 #include "core.h"
-#include "files.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <time.h>
+#ifdef PONG_LOGGING_FILE
+#include <stdlib.h>
+#include <string.h>
+#if PONG_PLATFORM_WINDOWS
+#include <windows.h>
+#elif PONG_PLATFORM_LINUX
+#include <unistd.h>
+#endif
+#endif
 
 #define PONG_LOG_TIME_BUF_SIZE 64
 #define PONG_LOG_MESG_BUF_SIZE 256
@@ -20,18 +28,51 @@ static const char *PONG_LOG_COLORS[PongLogUrgencyCount] = { "", "", "", "", "" }
 #define PONG_LOG_RESETCOLOR ""
 #endif
 
+#ifdef PONG_LOGGING_FILE
+static char *log_filepath;
+#endif
+
 static const char *urgency_labels[PongLogUrgencyCount] = { "VERB", "INFO", "NOTE", "WARN", "ERRR" };
 static struct timespec init_time;
 
-void pong_log_internal_init() {
+int pong_log_internal_init() {
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	time_t now = time(NULL);
 	struct tm *time_raw = localtime(&now);
 	char time_string[PONG_LOG_TIME_BUF_SIZE];
-	strftime(time_string, sizeof (char[PONG_LOG_TIME_BUF_SIZE]), "%F %T %Z", time_raw);
-	printf("%s\n", time_string);
-	pong_files_deleteFile(PONG_LOG_FILE);
+	strftime(time_string, sizeof (char[PONG_LOG_TIME_BUF_SIZE]), "%Y-%m-%d %H:%M:%S %Z\n", time_raw);
+	printf(time_string);
+
+#ifdef PONG_LOGGING_FILE
+	// Duplicate code from files.c to remove dependencies in a debugging tool
+	int buffer_used, buffer_size = 64;
+	do {
+		buffer_size *= 2;
+		free(log_filepath);
+		log_filepath = malloc(sizeof (char) * buffer_size);
+#ifdef PONG_PLATFORM_WINDOWS
+		buffer_used = GetModuleFileNameA(NULL, log_filepath, buffer_size - 1);
+#elif PONG_PLATFORM_LINUX
+		buffer_used = readlink("/proc/self/exe", log_filepath, buffer_size - 1);
+#endif
+		if (buffer_used <= 0) {
+			printf("Failed to initialize logging system: Could not locate data directory for log file!");
+			free(log_filepath);
+			return 1;
+		}
+	} while (buffer_used >= buffer_size - 2);
+	log_filepath[buffer_used] = '\0';
+	strrchr(log_filepath, PONG_PATH_DELIMITER)[1] = '\0';
+	log_filepath = realloc(log_filepath, sizeof (char) * (strlen(log_filepath) + strlen(PONG_LOG_FILE) + 1));
+	strcat(log_filepath, PONG_LOG_FILE);
+
+	FILE *log_file = fopen(log_filepath, "w");
+	fprintf(log_file, time_string);
+	fclose(log_file);
+#endif
+
 	PONG_LOG("Logging initialized!", PONG_LOG_VERBOSE);
+	return 0;
 }
 
 void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...) {
@@ -57,7 +98,19 @@ void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...
 	}
 
 	printf(log_string);
-	pong_files_appendData(PONG_LOG_FILE, log_string);
+#ifdef PONG_LOGGING_FILE
+	FILE *log_file = fopen(log_filepath, "a");
+	fprintf(log_file, log_string);
+	fclose(log_file);
+#endif
+}
+
+void pong_log_internal_cleanup() {
+	PONG_LOG("Cleaning up logging...", PONG_LOG_VERBOSE);
+#ifdef PONG_LOGGING_FILE
+	// TODO: backup log file
+	free(log_filepath);
+#endif
 }
 
 #else

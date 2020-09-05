@@ -90,6 +90,7 @@ void pong_cleanup() {
 	pong_events_cleanup();
 	pong_window_cleanup();
 	pong_resources_cleanup();
+	pong_files_cleanup();
 }
 
 bool pong_internal_quitCallback() {

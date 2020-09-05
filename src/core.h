@@ -3,7 +3,6 @@
 
 #define PONG_WINDOW_WIDTH 640
 #define PONG_WINDOW_HEIGHT 480
-#define PONG_LOG_FILE "log.txt"
 #define PONG_RESOURCES_FILE "data.wad"
 
 #if defined (_WIN32)
@@ -28,6 +27,10 @@
 #define PONG_VERBOSE_LOGS 1
 #else
 #define PONG_VERBOSE_LOGS 0
+#endif
+
+#ifdef PONG_LOGGING_FILE
+#define PONG_LOGGING_FILE "log.txt"
 #endif
 
 #define NSEC_PER_SEC 1000000000

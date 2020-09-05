@@ -24,7 +24,7 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 	- [x] Handling V-Sync
 	- [x] Handling extremely low FPS
 	- [x] Cleanup function
-- [ ] **Logging**
+- [x] **Logging**
 	- [x] Printing messages to console
 	- [x] printf() formatting
 	- [x] Message buffer overflow handling
@@ -34,7 +34,7 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 	- [x] Use of defines/macros to prune logging from binary
 	- [x] Coloured logs
 	- [x] Verbose log pruning
-	- [ ] File output
+	- [x] File output
 - [x] **Resource management**
 	- [x] Loading resources from any working directory
 	- [x] Opening ZIP archive with libzip

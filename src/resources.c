@@ -28,13 +28,14 @@ static unsigned int resource_map_count_max;
 int pong_resources_init() {
 	PONG_LOG("Initializing resource manager...", PONG_LOG_INFO);
 
-	// FIXME: c string manip is difficult, fails with path lengths over 256
-	char resources_filepath[256];
-	strncat(strncpy(resources_filepath, pong_files_getDataDirectoryPath(), 255), PONG_RESOURCES_FILE, 256);
+	const char *data_directory = pong_files_getDataDirectoryPath();
+	char *resources_filepath = malloc(sizeof (char) * (strlen(data_directory) + strlen(PONG_RESOURCES_FILE) + 1));
+	strcat(strcpy(resources_filepath, data_directory), PONG_RESOURCES_FILE);
 
 	PONG_LOG("Opening resource data archive at '%s'...", PONG_LOG_VERBOSE, resources_filepath);
 	int err = 0;
 	zip_archive = zip_open(resources_filepath, 0, &err);
+	free(resources_filepath);
 	if (err) {
 		struct zip_error error;
 		zip_error_init_with_code(&error, err);
