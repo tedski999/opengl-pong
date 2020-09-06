@@ -48,19 +48,22 @@ int pong_log_internal_init() {
 	printf(time_string);
 
 #ifdef PONG_LOGGING_FILE
-	// Duplicate code from files.c to remove dependencies in a debugging tool
 	int buffer_used, buffer_size = 64;
 	do {
 		buffer_size *= 2;
 		free(log_file_path);
 		log_directory_path = malloc(sizeof (char) * buffer_size);
+		if (!log_directory_path) {
+			printf("Could not allocate memory for log directory path!\n");
+			return 1;
+		}
 #ifdef PONG_PLATFORM_WINDOWS
 		buffer_used = GetModuleFileNameA(NULL, log_directory_path, buffer_size - 1);
 #elif PONG_PLATFORM_LINUX
 		buffer_used = readlink("/proc/self/exe", log_directory_path, buffer_size - 1);
 #endif
 		if (buffer_used <= 0) {
-			printf("Failed to initialize logging system: Could not locate data directory for logging!");
+			printf("Failed to initialize logging system: Could not locate data directory for logging!\n");
 			free(log_directory_path);
 			return 1;
 		}
@@ -68,18 +71,36 @@ int pong_log_internal_init() {
 	log_directory_path[buffer_used] = '\0';
 	strrchr(log_directory_path, PONG_PATH_DELIMITER)[1] = '\0';
 	int log_directory_path_len = strlen(log_directory_path) + strlen(PONG_LOG_DIRECTORY) + 2;
-	log_directory_path = realloc(log_directory_path, sizeof (char) * log_directory_path_len);
+	char *new_log_directory_path = realloc(log_directory_path, sizeof (char) * log_directory_path_len);
+	if (!new_log_directory_path) {
+		printf("Could not reallocate memory for log directory path!\n");
+		free(log_directory_path);
+		return 1;
+	}
+	log_directory_path = new_log_directory_path;
+
 	strcat(log_directory_path, PONG_LOG_DIRECTORY);
 	log_directory_path[log_directory_path_len - 2] = PONG_PATH_DELIMITER;
 	log_directory_path[log_directory_path_len - 1] = '\0';
 
 	log_file_path = malloc(sizeof (char) * (strlen(log_directory_path) + strlen(PONG_LOG_FILE) + 1));
+	if (!log_file_path) {
+		printf("Could not allocate memory for log file path!\n");
+		free(log_directory_path);
+		return 1;
+	}
 	strcpy(log_file_path, log_directory_path);
 	strcat(log_file_path, PONG_LOG_FILE);
 
 	char compressed_log_file_name[PONG_LOG_TIME_BUF_SIZE];
 	strftime(compressed_log_file_name, sizeof (char) * PONG_LOG_TIME_BUF_SIZE, "%Y-%m-%dT%H-%M-%S.gz", time_raw);
 	compressed_log_file_path = malloc(sizeof (char) * (strlen(log_directory_path) + strlen(compressed_log_file_name) + 1));
+	if (!compressed_log_file_path) {
+		printf("Could not allocate memory for compressed log file path!\n");
+		free(log_directory_path);
+		free(log_file_path);
+		return 1;
+	}
 	strcpy(compressed_log_file_path, log_directory_path);
 	strcat(compressed_log_file_path, compressed_log_file_name);
 

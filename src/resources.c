@@ -30,6 +30,10 @@ int pong_resources_init() {
 
 	const char *data_directory = pong_files_getDataDirectoryPath();
 	char *resources_filepath = malloc(sizeof (char) * (strlen(data_directory) + strlen(PONG_RESOURCES_FILE) + 1));
+	if (!resources_filepath) {
+		PONG_LOG("Could not allocate memory for resources file path!", PONG_LOG_ERROR);
+		return 1;
+	}
 	strcat(strcpy(resources_filepath, data_directory), PONG_RESOURCES_FILE);
 
 	PONG_LOG("Opening resource data archive at '%s'...", PONG_LOG_VERBOSE, resources_filepath);
@@ -46,6 +50,10 @@ int pong_resources_init() {
 
 	PONG_LOG("Initializing resource map...", PONG_LOG_VERBOSE);
 	resource_map = calloc(1, sizeof (struct PongResourceMap) * PONG_RESOURCES_MAP_INITIAL_COUNT);
+	if (!resource_map) {
+		PONG_LOG("Could not allocate memory for resource map!", PONG_LOG_ERROR);
+		return 1;
+	}
 	resource_map_count_max = PONG_RESOURCES_MAP_INITIAL_COUNT;
 
 	PONG_LOG("Resource manager initialized!", PONG_LOG_VERBOSE);
@@ -65,9 +73,14 @@ void pong_resources_load(const char *file_path, const char *resource_id) {
 
 	PONG_LOG("Opening resource...", PONG_LOG_VERBOSE);
 	char *data = malloc(sizeof (char) * stat.size + 1);
+	if (!data) {
+		PONG_LOG("Could not allocate memory for resource!", PONG_LOG_WARNING);
+		return;
+	}
 	struct zip_file *file = zip_fopen(zip_archive, file_path, 0);
 	if (!file) {
 		PONG_LOG("An error occurred while trying to open requested resource '%s': %s", PONG_LOG_WARNING, file_path, zip_strerror(zip_archive));
+		zip_fclose(file);
 		free(data);
 		return;
 	}
@@ -123,6 +136,10 @@ void pong_resources_changeResourceMapCount(int count_change) {
 	unsigned int old_resource_map_count = resource_map_count_max;
 	resource_map_count_max += count_change;
 	resource_map = calloc(1, sizeof (struct PongResourceMap) * resource_map_count_max);
+	if (!resource_map) {
+		PONG_LOG("Could not allocate memory for resource map!", PONG_LOG_WARNING);
+		return;
+	}
 
 	PONG_LOG("Rehashing resource map entries...", PONG_LOG_VERBOSE);
 	for (unsigned int old_hash_index = 0; old_hash_index < old_resource_map_count; old_hash_index++) {

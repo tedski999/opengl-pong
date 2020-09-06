@@ -23,7 +23,12 @@ static struct PongEventCallbackArray events_callbacks[PongEventTypeCount];
 void pong_events_addCallback(enum PongEventType event_type, PongEventCallback callback) {
 	PONG_LOG("Adding callback %p for event type %i...", PONG_LOG_VERBOSE, callback, event_type);
 	struct PongEventCallbackArray *event_callbacks = events_callbacks + event_type;
-	event_callbacks->callbacks = realloc(event_callbacks->callbacks, sizeof(PongEventCallback) * ++event_callbacks->length);
+	PongEventCallback *new_callback_array = realloc(event_callbacks->callbacks, sizeof (PongEventCallback) * ++event_callbacks->length);
+	if (!new_callback_array) {
+		PONG_LOG("Error reallocating memory for callback array!", PONG_LOG_WARNING);
+		return;
+	}
+	event_callbacks->callbacks = new_callback_array;
 	event_callbacks->callbacks[event_callbacks->length - 1] = callback;
 }
 
@@ -38,12 +43,22 @@ void pong_events_removeCallback(enum PongEventType event_type, PongEventCallback
 			occurences++;
 	}
 	event_callbacks->length -= occurences;
-	event_callbacks->callbacks = realloc(event_callbacks->callbacks, sizeof (PongEventCallback) * event_callbacks->length);
+	PongEventCallback *new_callback_array = realloc(event_callbacks->callbacks, sizeof (PongEventCallback) * event_callbacks->length);
+	if (!new_callback_array) {
+		PONG_LOG("Error reallocating memory for callback array!", PONG_LOG_WARNING);
+		return;
+	}
+	event_callbacks->callbacks = new_callback_array;
 }
 
 void pong_events_pushEvent(enum PongEventType event_type) {
 	PONG_LOG("Pushing event type %i...", PONG_LOG_VERBOSE, event_type);
-	event_queue.events = realloc(event_queue.events, sizeof (struct PongEvent) * ++event_queue.length);
+	struct PongEvent *new_event_queue = realloc(event_queue.events, sizeof (struct PongEvent) * ++event_queue.length);
+	if (!new_event_queue) {
+		PONG_LOG("Error reallocating memory for event queue!", PONG_LOG_WARNING);
+		return;
+	}
+	event_queue.events = new_event_queue;
 	event_queue.events[event_queue.length - 1] = (struct PongEvent) { event_type };
 }
 

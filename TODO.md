@@ -118,9 +118,9 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 	- [ ] Error handling
 		- [x] Handle errors during initialization
 		- [ ] Handle errors during main game loop
-		- [ ] Handle malloc()/free() errors
-		- [ ] Hunt down any memory leaks
-		- [ ] Fix possible crashes occurring *while handling errors*
+		- [x] Handle malloc()/free() errors
+		- [x] Hunt down any memory leaks
+		- [x] Fix possible crashes occurring *while handling errors*
 		- [ ] Error-out after resource loading/getting failure
-	- [ ] Run a static code analyser over project
+	- [x] Run a static code analyser over project
 
