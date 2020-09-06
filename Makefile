@@ -9,14 +9,14 @@ PLATFORM	= linux
 ifeq ($(PLATFORM), linux)
 CC			:= gcc
 CFLAGS		:= -Wall -pedantic -Isrc -O2
-LFLAGS		:= -lm -lOpenGL -lglfw -lzip
+LFLAGS		:= -lm -lOpenGL -lglfw -lz -lzip
 else ifeq ($(PLATFORM), windows)
 NAME		:= $(NAME).exe
 CC			:= x86_64-w64-mingw32-gcc
 DLL_DIR		:= /usr/x86_64-w64-mingw32/bin
 DLL_BINS	:= glfw3.dll libwinpthread-1.dll libzip.dll libssp-0.dll libbz2-1.dll liblzma-5.dll zlib1.dll
 CFLAGS		:= -Wall -pedantic -Isrc -O2
-LFLAGS		:= -lopengl32 -lglfw3dll -lzip
+LFLAGS		:= -lopengl32 -lglfw3dll -lz -lzip
 else
 $(error $(NAME) does not support a '$(PLATFORM)' build!)
 endif

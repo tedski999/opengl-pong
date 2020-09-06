@@ -9,27 +9,31 @@
 #ifdef PONG_LOGGING_FILE
 #include <stdlib.h>
 #include <string.h>
+#include <zlib.h>
 #if PONG_PLATFORM_WINDOWS
 #include <windows.h>
+#define mkdir(dir, mode) mkdir(dir)
 #elif PONG_PLATFORM_LINUX
+#include <sys/stat.h>
 #include <unistd.h>
 #endif
 #endif
 
-#define PONG_LOG_TIME_BUF_SIZE 64
+#define PONG_LOG_TIME_BUF_SIZE 128
 #define PONG_LOG_MESG_BUF_SIZE 256
 
-// TODO: can PONG_LOG_COLORS be preprocessed?
 #ifdef PONG_COLORED_LOGS
-static const char *PONG_LOG_COLORS[PongLogUrgencyCount] = { "\033[2;37m", "\033[0;37m", "\033[1;32m", "\033[1;33m", "\033[7;31m" };
-#define PONG_LOG_RESETCOLOR "\033[0m"
+static const char *log_colors[PongLogUrgencyCount + 1] = { "\033[2;37m", "\033[0;37m", "\033[1;32m", "\033[1;33m", "\033[7;31m", "\033[0m" };
 #else
-static const char *PONG_LOG_COLORS[PongLogUrgencyCount] = { "", "", "", "", "" };
-#define PONG_LOG_RESETCOLOR ""
+static const char *log_colors[PongLogUrgencyCount + 1] = { "", "", "", "", "", "" };
 #endif
 
 #ifdef PONG_LOGGING_FILE
-static char *log_filepath;
+#define PONG_LOG_DIRECTORY "logs"
+#define PONG_LOG_FILE "latest.txt"
+static char *log_directory_path;
+static char *log_file_path;
+static char *compressed_log_file_path;
 #endif
 
 static const char *urgency_labels[PongLogUrgencyCount] = { "VERB", "INFO", "NOTE", "WARN", "ERRR" };
@@ -40,7 +44,7 @@ int pong_log_internal_init() {
 	time_t now = time(NULL);
 	struct tm *time_raw = localtime(&now);
 	char time_string[PONG_LOG_TIME_BUF_SIZE];
-	strftime(time_string, sizeof (char[PONG_LOG_TIME_BUF_SIZE]), "%Y-%m-%d %H:%M:%S %Z\n", time_raw);
+	strftime(time_string, sizeof (char) * PONG_LOG_TIME_BUF_SIZE, "%Y-%m-%d %H:%M:%S %Z\n", time_raw);
 	printf(time_string);
 
 #ifdef PONG_LOGGING_FILE
@@ -48,30 +52,46 @@ int pong_log_internal_init() {
 	int buffer_used, buffer_size = 64;
 	do {
 		buffer_size *= 2;
-		free(log_filepath);
-		log_filepath = malloc(sizeof (char) * buffer_size);
+		free(log_file_path);
+		log_directory_path = malloc(sizeof (char) * buffer_size);
 #ifdef PONG_PLATFORM_WINDOWS
-		buffer_used = GetModuleFileNameA(NULL, log_filepath, buffer_size - 1);
+		buffer_used = GetModuleFileNameA(NULL, log_directory_path, buffer_size - 1);
 #elif PONG_PLATFORM_LINUX
-		buffer_used = readlink("/proc/self/exe", log_filepath, buffer_size - 1);
+		buffer_used = readlink("/proc/self/exe", log_directory_path, buffer_size - 1);
 #endif
 		if (buffer_used <= 0) {
-			printf("Failed to initialize logging system: Could not locate data directory for log file!");
-			free(log_filepath);
+			printf("Failed to initialize logging system: Could not locate data directory for logging!");
+			free(log_directory_path);
 			return 1;
 		}
 	} while (buffer_used >= buffer_size - 2);
-	log_filepath[buffer_used] = '\0';
-	strrchr(log_filepath, PONG_PATH_DELIMITER)[1] = '\0';
-	log_filepath = realloc(log_filepath, sizeof (char) * (strlen(log_filepath) + strlen(PONG_LOG_FILE) + 1));
-	strcat(log_filepath, PONG_LOG_FILE);
+	log_directory_path[buffer_used] = '\0';
+	strrchr(log_directory_path, PONG_PATH_DELIMITER)[1] = '\0';
+	int log_directory_path_len = strlen(log_directory_path) + strlen(PONG_LOG_DIRECTORY) + 2;
+	log_directory_path = realloc(log_directory_path, sizeof (char) * log_directory_path_len);
+	strcat(log_directory_path, PONG_LOG_DIRECTORY);
+	log_directory_path[log_directory_path_len - 2] = PONG_PATH_DELIMITER;
+	log_directory_path[log_directory_path_len - 1] = '\0';
 
-	FILE *log_file = fopen(log_filepath, "w");
+	log_file_path = malloc(sizeof (char) * (strlen(log_directory_path) + strlen(PONG_LOG_FILE) + 1));
+	strcpy(log_file_path, log_directory_path);
+	strcat(log_file_path, PONG_LOG_FILE);
+
+	char compressed_log_file_name[PONG_LOG_TIME_BUF_SIZE];
+	strftime(compressed_log_file_name, sizeof (char) * PONG_LOG_TIME_BUF_SIZE, "%Y-%m-%dT%H-%M-%S.gz", time_raw);
+	compressed_log_file_path = malloc(sizeof (char) * (strlen(log_directory_path) + strlen(compressed_log_file_name) + 1));
+	strcpy(compressed_log_file_path, log_directory_path);
+	strcat(compressed_log_file_path, compressed_log_file_name);
+
+	mkdir(log_directory_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	FILE *log_file = fopen(log_file_path, "w");
 	fprintf(log_file, time_string);
 	fclose(log_file);
+
+	printf("Log file will be located at '%s'.\n", log_file_path);
+	printf("Compressed log file will be located at '%s'.\n", compressed_log_file_path);
 #endif
 
-	PONG_LOG("Logging initialized!", PONG_LOG_VERBOSE);
 	return 0;
 }
 
@@ -90,7 +110,7 @@ void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...
 	va_end(args);
 
 	char log_string[PONG_LOG_MESG_BUF_SIZE];
-	int log_string_len = snprintf(log_string, sizeof (char[PONG_LOG_MESG_BUF_SIZE]), "%.4f %s[%s] %s%s\n", time_since_init, PONG_LOG_COLORS[urgency], urgency_labels[urgency], formatted_message, PONG_LOG_RESETCOLOR);
+	int log_string_len = snprintf(log_string, sizeof (char[PONG_LOG_MESG_BUF_SIZE]), "%.4f %s[%s] %s%s\n", time_since_init, log_colors[urgency], urgency_labels[urgency], formatted_message, log_colors[PongLogUrgencyCount]);
 	if (log_string_len >= PONG_LOG_MESG_BUF_SIZE) {
 		log_string[PONG_LOG_MESG_BUF_SIZE - 2] = '\n';
 		char *str = log_string + PONG_LOG_MESG_BUF_SIZE - 5;
@@ -99,17 +119,31 @@ void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...
 
 	printf(log_string);
 #ifdef PONG_LOGGING_FILE
-	FILE *log_file = fopen(log_filepath, "a");
+	mkdir(log_directory_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	FILE *log_file = fopen(log_file_path, "a");
 	fprintf(log_file, log_string);
 	fclose(log_file);
 #endif
 }
 
 void pong_log_internal_cleanup() {
-	PONG_LOG("Cleaning up logging...", PONG_LOG_VERBOSE);
 #ifdef PONG_LOGGING_FILE
-	// TODO: backup log file
-	free(log_filepath);
+	mkdir(log_directory_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+	printf("Compressing latest log file to '%s'...\n", compressed_log_file_path);
+	FILE *source = fopen(log_file_path, "rb");
+	gzFile dest = gzopen(compressed_log_file_path, "wb");
+	char buffer[128];
+	int bytes_read = 0;
+	while ((bytes_read = fread(buffer, 1, sizeof buffer, source)) > 0)
+		gzwrite(dest, buffer, bytes_read);
+	fclose(source);
+	gzclose(dest);
+	printf("Done!\n");
+
+	free(log_directory_path);
+	free(log_file_path);
+	free(compressed_log_file_path);
 #endif
 }
 

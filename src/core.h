@@ -23,14 +23,8 @@
 #define PONG_OPENGL_VERSION_MINOR_MIN 3
 #endif
 
-#ifdef PONG_VERBOSE_LOGS
-#define PONG_VERBOSE_LOGS 1
-#else
+#ifndef PONG_VERBOSE_LOGS
 #define PONG_VERBOSE_LOGS 0
-#endif
-
-#ifdef PONG_LOGGING_FILE
-#define PONG_LOGGING_FILE "log.txt"
 #endif
 
 #define NSEC_PER_SEC 1000000000
