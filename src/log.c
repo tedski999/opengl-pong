@@ -6,9 +6,9 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <time.h>
+#include <string.h>
 #ifdef PONG_LOGGING_FILE
 #include <stdlib.h>
-#include <string.h>
 #include <zlib.h>
 #if PONG_PLATFORM_WINDOWS
 #include <windows.h>
@@ -17,10 +17,14 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
+#define PONG_LOG_DIRECTORY "logs"
+#define PONG_LOG_FILE "latest.txt"
 #endif
 
 #define PONG_LOG_TIME_BUF_SIZE 128
 #define PONG_LOG_MESG_BUF_SIZE 256
+
+static void pong_log_internal_generateGroupsString();
 
 #ifdef PONG_COLORED_LOGS
 static const char *log_colors[PongLogUrgencyCount + 1] = { "\033[2;37m", "\033[0;37m", "\033[1;32m", "\033[1;33m", "\033[7;31m", "\033[0m" };
@@ -29,14 +33,15 @@ static const char *log_colors[PongLogUrgencyCount + 1] = { "", "", "", "", "", "
 #endif
 
 #ifdef PONG_LOGGING_FILE
-#define PONG_LOG_DIRECTORY "logs"
-#define PONG_LOG_FILE "latest.txt"
 static char *log_directory_path;
 static char *log_file_path;
 static char *compressed_log_file_path;
 #endif
 
 static const char *urgency_labels[PongLogUrgencyCount] = { "VERB", "INFO", "NOTE", "WARN", "ERRR" };
+static const char **group_titles;
+static unsigned int group_titles_len;
+static char *groups_string;
 static struct timespec init_time;
 
 int pong_log_internal_init() {
@@ -46,6 +51,8 @@ int pong_log_internal_init() {
 	char time_string[PONG_LOG_TIME_BUF_SIZE];
 	strftime(time_string, sizeof (char) * PONG_LOG_TIME_BUF_SIZE, "%Y-%m-%d %H:%M:%S %Z\n", time_raw);
 	printf(time_string);
+
+	pong_log_internal_generateGroupsString();
 
 #ifdef PONG_LOGGING_FILE
 	int buffer_used, buffer_size = 64;
@@ -131,7 +138,7 @@ void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...
 	va_end(args);
 
 	char log_string[PONG_LOG_MESG_BUF_SIZE];
-	int log_string_len = snprintf(log_string, sizeof (char[PONG_LOG_MESG_BUF_SIZE]), "%.4f %s[%s] %s%s\n", time_since_init, log_colors[urgency], urgency_labels[urgency], formatted_message, log_colors[PongLogUrgencyCount]);
+	int log_string_len = snprintf(log_string, sizeof (char[PONG_LOG_MESG_BUF_SIZE]), "%.4f %s[%s] %s%s%s\n", time_since_init, log_colors[urgency], urgency_labels[urgency], groups_string, formatted_message, log_colors[PongLogUrgencyCount]);
 	if (log_string_len >= PONG_LOG_MESG_BUF_SIZE) {
 		log_string[PONG_LOG_MESG_BUF_SIZE - 2] = '\n';
 		char *str = log_string + PONG_LOG_MESG_BUF_SIZE - 5;
@@ -147,7 +154,61 @@ void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...
 #endif
 }
 
+void pong_log_internal_pushSubgroup(const char *group_title) {
+	unsigned int new_group_titles_len = group_titles_len + 1;
+	const char **new_group_titles = realloc(group_titles, sizeof (const char *) * new_group_titles_len);
+	if (!new_group_titles)
+		return;
+	group_titles = new_group_titles;
+	group_titles[group_titles_len] = group_title;
+	group_titles_len = new_group_titles_len;
+	pong_log_internal_generateGroupsString();
+}
+
+void pong_log_internal_popSubgroup() {
+	if (group_titles_len) {
+		group_titles_len--;
+		pong_log_internal_generateGroupsString();
+	}
+}
+
+void pong_log_internal_clearSubgroups() {
+	if (group_titles_len) {
+		group_titles_len = 0;
+		pong_log_internal_generateGroupsString();
+	}
+}
+
+void pong_log_internal_generateGroupsString() {
+	if (!group_titles_len) {
+		free(groups_string);
+		 groups_string = strdup("");
+	} else {
+		unsigned int new_groups_string_len = 3; // " - "
+		for (unsigned int i = 0; i < group_titles_len; i++)
+			new_groups_string_len += strlen(group_titles[i]) + 1; // +1 for subgroup seperator and final null terminator
+		char *new_groups_string = realloc(groups_string, sizeof (char) * new_groups_string_len);
+		if (!new_groups_string)
+			return;
+		groups_string = new_groups_string;
+
+		char *groups_str_ptr = groups_string;
+		for (unsigned int i = 0; i < group_titles_len; i++) {
+			const char *title_str_ptr = group_titles[i];
+			while (*title_str_ptr != '\0')
+				*groups_str_ptr++ = *title_str_ptr++;
+			*groups_str_ptr++ = '/';
+		}
+		*--groups_str_ptr = '\0';
+		strcat(groups_string, " - ");
+	}
+}
+
 void pong_log_internal_cleanup() {
+	printf("Clearing remaining log subgroups...\n");
+	free(group_titles);
+	free(groups_string);
+
 #ifdef PONG_LOGGING_FILE
 	mkdir(log_directory_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 

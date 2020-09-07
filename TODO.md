@@ -35,7 +35,7 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 	- [x] Coloured logs
 	- [x] Verbose log pruning
 	- [x] File output
-	- [ ] Grouping logs
+	- [x] Grouping logs
 - [x] **Resource management**
 	- [x] Loading resources from any working directory
 	- [x] Opening ZIP archive with libzip
