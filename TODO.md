@@ -118,12 +118,12 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 		- [ ] References
 	- [ ] Error handling
 		- [x] Handle errors during initialization
-		- [ ] Handle errors during main game loop
+		- [x] Handle errors during main game loop
 		- [x] Handle malloc()/free() errors
 		- [x] Hunt down any memory leaks
 		- [x] Fix possible crashes occurring *while handling errors*
-		- [ ] Error-out after resource loading/getting failure
-		- [ ] Exit game gracefully after error (cleanup and such)
+		- [x] Error-out after resource loading/getting failure
+		- [x] Exit game gracefully after error (cleanup and such)
 		- [ ] Closing terminal instead of GLFW window fix?
 	- [x] Run a static code analyser over project
 

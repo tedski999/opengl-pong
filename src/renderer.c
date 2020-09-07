@@ -2,10 +2,10 @@
 #include "core.h"
 #include "resources.h"
 #include "log.h"
+#include "error.h"
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
-#include <stdbool.h>
 
 #define SHADER_ERROR_MSG_BUF_SIZE 256
 
@@ -15,28 +15,21 @@ static GLuint pong_renderer_internal_linkShaders(GLuint *shader_ids, unsigned in
 static void pong_renderer_internal_glDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
 #endif
 
-static bool safe_to_clean = false;
 static GLuint program_id;
 static GLuint rect_vao_id;
 
-int pong_renderer_init() {
+void pong_renderer_init() {
 	PONG_LOG("Initializing renderer...", PONG_LOG_INFO);
 
 	int gl_version = gladLoadGL(glfwGetProcAddress);
-	if (gl_version == 0) {
-		PONG_LOG("Could not load OpenGL!", PONG_LOG_ERROR);
-		return 1;
-	}
-	if (GLAD_VERSION_MAJOR(gl_version) < 3 || (GLAD_VERSION_MAJOR(gl_version) == 3 && GLAD_VERSION_MINOR(gl_version) < 3)) {
-		PONG_LOG("Your graphics driver does not support OpenGL 3.3!", PONG_LOG_ERROR);
-		return 1;
-	}
+	if (gl_version == 0)
+		PONG_ERROR("Could not load OpenGL!");
+	if (GLAD_VERSION_MAJOR(gl_version) < 3 || (GLAD_VERSION_MAJOR(gl_version) == 3 && GLAD_VERSION_MINOR(gl_version) < 3))
+		PONG_ERROR("Your graphics driver does not support OpenGL 3.3!");
 
 #ifdef PONG_GL_DEBUG
-	if (GLAD_VERSION_MAJOR(gl_version) < 4 || (GLAD_VERSION_MAJOR(gl_version) == 4 && GLAD_VERSION_MINOR(gl_version) < 3)) {
-		PONG_LOG("OpenGL debug output requested, but your graphics driver does not support OpenGL 4.3!", PONG_LOG_ERROR);
-		return 1;
-	}
+	if (GLAD_VERSION_MAJOR(gl_version) < 4 || (GLAD_VERSION_MAJOR(gl_version) == 4 && GLAD_VERSION_MINOR(gl_version) < 3))
+		PONG_ERROR("OpenGL debug output requested, but your graphics driver does not support OpenGL 4.3!");
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(pong_renderer_internal_glDebugMessageCallback, NULL);
 #endif
@@ -89,7 +82,6 @@ int pong_renderer_init() {
 	program_id = pong_renderer_internal_linkShaders(shader_ids, shader_count);
 	glDeleteShader(shader_ids[0]);
 	glDeleteShader(shader_ids[1]);
-	safe_to_clean = true;
 
 	PONG_LOG("Configuring shaders...", PONG_LOG_VERBOSE);
 	glUseProgram(program_id);
@@ -107,7 +99,6 @@ int pong_renderer_init() {
 	pong_renderer_clearScreen();
 
 	PONG_LOG("Renderer initialized!", PONG_LOG_VERBOSE);
-	return 0;
 }
 
 void pong_renderer_drawrect(float x, float y, float w, float h) {
@@ -132,10 +123,9 @@ void pong_renderer_clearScreen() {
 }
 
 void pong_renderer_cleanup() {
-	if (safe_to_clean) {
-		PONG_LOG("Cleaning up renderer...", PONG_LOG_INFO);
+	PONG_LOG("Cleaning up renderer...", PONG_LOG_INFO);
+	if (program_id)
 		glDeleteProgram(program_id);
-	}
 }
 
 GLuint pong_renderer_internal_compileShader(const char *source, GLenum type) {
@@ -149,8 +139,7 @@ GLuint pong_renderer_internal_compileShader(const char *source, GLenum type) {
 	if (compiled_status != GL_TRUE) {
 		GLchar message[SHADER_ERROR_MSG_BUF_SIZE];
 		glGetShaderInfoLog(shader_id, SHADER_ERROR_MSG_BUF_SIZE, NULL, message);
-		PONG_LOG("Unable to compile shader: %s", PONG_LOG_ERROR, message);
-		return 0;
+		PONG_ERROR("Unable to compile shader: %s", message);
 	}
 
 	return shader_id;
@@ -168,8 +157,7 @@ GLuint pong_renderer_internal_linkShaders(GLuint *shader_ids, unsigned int count
 	if (linked_status != GL_TRUE) {
 		GLchar message[SHADER_ERROR_MSG_BUF_SIZE];
 		glGetShaderInfoLog(program_id, SHADER_ERROR_MSG_BUF_SIZE, NULL, message);
-		PONG_LOG("Unable to link shaders: %s", PONG_LOG_ERROR, message);
-		return 0;
+		PONG_ERROR("Unable to link shaders: %s", message);
 	}
 
 	return program_id;

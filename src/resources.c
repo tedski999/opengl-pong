@@ -2,9 +2,9 @@
 #include "core.h"
 #include "files.h"
 #include "log.h"
+#include "error.h"
 #include <zip.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
 
 #define PONG_RESOURCES_MAP_INITIAL_COUNT 8
@@ -19,21 +19,18 @@ struct PongResourceMap {
 static unsigned int pong_resources_internal_getResourceMapHashIndex(const char *key);
 static void pong_resources_internal_deallocateResource(unsigned int hash_index);
 
-static bool safe_to_clean = false;
 static struct zip *zip_archive;
 static struct PongResourceMap *resource_map;
 static unsigned int resource_map_count_cur;
 static unsigned int resource_map_count_max;
 
-int pong_resources_init() {
+void pong_resources_init() {
 	PONG_LOG("Initializing resource manager...", PONG_LOG_INFO);
 
 	const char *data_directory = pong_files_getDataDirectoryPath();
 	char *resources_filepath = malloc(sizeof (char) * (strlen(data_directory) + strlen(PONG_RESOURCES_FILE) + 1));
-	if (!resources_filepath) {
-		PONG_LOG("Could not allocate memory for resources file path!", PONG_LOG_ERROR);
-		return 1;
-	}
+	if (!resources_filepath)
+		PONG_ERROR("Could not allocate memory for resources file path!");
 	strcat(strcpy(resources_filepath, data_directory), PONG_RESOURCES_FILE);
 
 	PONG_LOG("Opening resource data archive at '%s'...", PONG_LOG_VERBOSE, resources_filepath);
@@ -43,21 +40,16 @@ int pong_resources_init() {
 	if (err) {
 		struct zip_error error;
 		zip_error_init_with_code(&error, err);
-		PONG_LOG("An error occurred while trying to open '%s': %s", PONG_LOG_ERROR, resources_filepath, zip_error_strerror(&error));
-		return 1;
+		PONG_ERROR("An error occurred while trying to open resource data archive: %s", zip_error_strerror(&error));
 	}
-	safe_to_clean = true;
 
 	PONG_LOG("Initializing resource map...", PONG_LOG_VERBOSE);
 	resource_map = calloc(1, sizeof (struct PongResourceMap) * PONG_RESOURCES_MAP_INITIAL_COUNT);
-	if (!resource_map) {
-		PONG_LOG("Could not allocate memory for resource map!", PONG_LOG_ERROR);
-		return 1;
-	}
+	if (!resource_map)
+		PONG_ERROR("Could not allocate memory for resource map!");
 	resource_map_count_max = PONG_RESOURCES_MAP_INITIAL_COUNT;
 
 	PONG_LOG("Resource manager initialized!", PONG_LOG_VERBOSE);
-	return 0;
 }
 
 void pong_resources_load(const char *file_path, const char *resource_id) {
@@ -66,23 +58,18 @@ void pong_resources_load(const char *file_path, const char *resource_id) {
 	PONG_LOG("Querying resource...", PONG_LOG_VERBOSE);
 	struct zip_stat stat;
 	zip_stat_init(&stat);
-	if (zip_stat(zip_archive, file_path, 0, &stat)) {
-		PONG_LOG("An error occurred while trying to query requested resource '%s': %s", PONG_LOG_WARNING, file_path, zip_strerror(zip_archive));
-		return;
-	}
+	if (zip_stat(zip_archive, file_path, 0, &stat))
+		PONG_ERROR("An error occurred while trying to query requested resource '%s': %s", file_path, zip_strerror(zip_archive));
 
 	PONG_LOG("Opening resource...", PONG_LOG_VERBOSE);
 	char *data = malloc(sizeof (char) * stat.size + 1);
-	if (!data) {
-		PONG_LOG("Could not allocate memory for resource!", PONG_LOG_WARNING);
-		return;
-	}
+	if (!data)
+		PONG_ERROR("Could not allocate memory for resource!");
 	struct zip_file *file = zip_fopen(zip_archive, file_path, 0);
 	if (!file) {
-		PONG_LOG("An error occurred while trying to open requested resource '%s': %s", PONG_LOG_WARNING, file_path, zip_strerror(zip_archive));
 		zip_fclose(file);
 		free(data);
-		return;
+		PONG_ERROR("An error occurred while trying to open requested resource '%s': %s", file_path, zip_strerror(zip_archive));
 	}
 
 	PONG_LOG("Reading resource...", PONG_LOG_VERBOSE);
@@ -90,10 +77,8 @@ void pong_resources_load(const char *file_path, const char *resource_id) {
 	zip_int64_t bytes_remaining = stat.size;
 	do {
 		bytes_read = zip_fread(file, data, stat.size);
-		if (bytes_read == -1) {
-			PONG_LOG("An error occurred while trying to load requested resource '%s': %s", PONG_LOG_WARNING, file_path, zip_strerror(zip_archive));
-			return;
-		}
+		if (bytes_read == -1)
+			PONG_ERROR("An error occurred while trying to load requested resource '%s': %s", file_path, zip_strerror(zip_archive));
 	} while (bytes_remaining -= bytes_read);
 	zip_fclose(file);
 	data[stat.size] = '\0';
@@ -125,21 +110,16 @@ void *pong_resources_get(const char *resource_id) {
 }
 
 void pong_resources_changeResourceMapCount(int count_change) {
-	if ((int) resource_map_count_max + count_change < resource_map_count_cur) {
-		PONG_LOG("Could not change resource map bucket count from %i to %i! The resource map is currently %i/%i full.", PONG_LOG_WARNING,
-			resource_map_count_max, (int) resource_map_count_max + count_change, resource_map_count_cur, resource_map_count_max);
-		return;
-	}
+	if ((int) resource_map_count_max + count_change < resource_map_count_cur)
+		PONG_ERROR("Attempted to change resource map bucket count from %i to %i! %i of the buckets are in use.", resource_map_count_max, (int) resource_map_count_max + count_change, resource_map_count_cur);
 
 	PONG_LOG("Changing resource map bucket count from %i to %i...", PONG_LOG_VERBOSE, resource_map_count_max, resource_map_count_max + count_change);
 	struct PongResourceMap *old_resource_map = resource_map;
 	unsigned int old_resource_map_count = resource_map_count_max;
 	resource_map_count_max += count_change;
 	resource_map = calloc(1, sizeof (struct PongResourceMap) * resource_map_count_max);
-	if (!resource_map) {
-		PONG_LOG("Could not allocate memory for resource map!", PONG_LOG_WARNING);
-		return;
-	}
+	if (!resource_map)
+		PONG_ERROR("Could not allocate memory for resource map!");
 
 	PONG_LOG("Rehashing resource map entries...", PONG_LOG_VERBOSE);
 	for (unsigned int old_hash_index = 0; old_hash_index < old_resource_map_count; old_hash_index++) {
@@ -154,13 +134,12 @@ void pong_resources_changeResourceMapCount(int count_change) {
 }
 
 void pong_resources_cleanup() {
-	if (safe_to_clean) {
-		PONG_LOG("Cleaning up resource manager...", PONG_LOG_INFO);
-		for (int hash_index = 0; hash_index < resource_map_count_max; hash_index++)
-			pong_resources_internal_deallocateResource(hash_index);
-		free(resource_map);
+	PONG_LOG("Cleaning up resource manager...", PONG_LOG_INFO);
+	for (int hash_index = 0; hash_index < resource_map_count_max; hash_index++)
+		pong_resources_internal_deallocateResource(hash_index);
+	if (zip_archive)
 		zip_close(zip_archive);
-	}
+	free(resource_map);
 }
 
 // Using djb2 hashing algorithm because I'm that basic

@@ -3,24 +3,21 @@
 #include "renderer.h"
 #include "events.h"
 #include "log.h"
+#include "error.h"
 #include <GLFW/glfw3.h>
-#include <stdbool.h>
 
 static void pong_window_internal_errorCallback(int code, const char *description);
 static void pong_window_internal_focusCallback(GLFWwindow *context, int is_focused);
 static void pong_window_internal_closeCallback(GLFWwindow *context);
 
-static bool safe_to_clean = false;
 static GLFWwindow *window;
 
-int pong_window_init() {
+void pong_window_init() {
 	PONG_LOG("Initializing GLFW window...", PONG_LOG_INFO);
 	PONG_LOG("Using GLFW v%i.%i", PONG_LOG_INFO, GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR);
 	glfwSetErrorCallback(pong_window_internal_errorCallback);
-	if (!glfwInit()) {
-		PONG_LOG("Failed to initialize GLFW!", PONG_LOG_ERROR);
-		return 1;
-	}
+	if (!glfwInit())
+		PONG_ERROR("Failed to initialize GLFW!");
 
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, PONG_OPENGL_VERSION_MAJOR_MIN);
@@ -29,11 +26,8 @@ int pong_window_init() {
 
 	PONG_LOG("Opening window...", PONG_LOG_VERBOSE);
 	window = glfwCreateWindow(PONG_WINDOW_WIDTH, PONG_WINDOW_HEIGHT, "Pong", NULL, NULL);
-	if (!window) {
-		PONG_LOG("Failed to create GLFW window!", PONG_LOG_ERROR);
-		return 1;
-	}
-	safe_to_clean = true;
+	if (!window)
+		PONG_ERROR("Failed to create GLFW window!");
 
 	PONG_LOG("Configuring window...", PONG_LOG_VERBOSE);
 	glfwSetWindowCloseCallback(window, pong_window_internal_closeCallback);
@@ -42,9 +36,7 @@ int pong_window_init() {
 	glfwSwapInterval(1);
 	PONG_LOG("GLFW window initialized!", PONG_LOG_VERBOSE);
 
-	if (pong_renderer_init())
-		return 1;
-	return 0;
+	pong_renderer_init();
 }
 
 void pong_window_update() {
@@ -57,12 +49,10 @@ void pong_window_render() {
 }
 
 void pong_window_cleanup() {
-	if (safe_to_clean) {
-		PONG_LOG("Cleaning up GLFW window...", PONG_LOG_INFO);
+	PONG_LOG("Cleaning up GLFW window...", PONG_LOG_INFO);
+	if (window)
 		glfwDestroyWindow(window);
-		glfwTerminate();
-	}
-
+	glfwTerminate();
 	pong_renderer_cleanup();
 }
 

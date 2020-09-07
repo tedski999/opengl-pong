@@ -1,5 +1,6 @@
 #include "events.h"
 #include "log.h"
+#include "error.h"
 #include <stdlib.h>
 #include <stdarg.h>
 
@@ -24,7 +25,7 @@ struct PongEventCallbackArray {
 };
 
 struct PongEvent *pong_events_internal_createEvent(enum PongEventType event_type, va_list args);
-bool pong_events_internal_executeCallback(PongEventCallback callback, enum PongEventType event_type, union PongEventArguments event_args);
+unsigned int pong_events_internal_executeCallback(PongEventCallback callback, enum PongEventType event_type, union PongEventArguments event_args);
 
 static struct PongEventArray event_queue;
 static struct PongEventCallbackArray events_callbacks[PongEventTypeCount];
@@ -34,10 +35,8 @@ void pong_events_addCallback(enum PongEventType event_type, PongEventCallback ca
 	struct PongEventCallbackArray *event_callbacks = events_callbacks + event_type;
 	unsigned int new_callback_array_len = event_callbacks->length + 1;
 	PongEventCallback *new_callback_array = realloc(event_callbacks->callbacks, sizeof (PongEventCallback) * new_callback_array_len);
-	if (!new_callback_array) {
-		PONG_LOG("Error reallocating memory for callback array!", PONG_LOG_WARNING);
-		return;
-	}
+	if (!new_callback_array)
+		PONG_ERROR("Could not reallocate memory for event callbacks!");
 	event_callbacks->callbacks = new_callback_array;
 	event_callbacks->callbacks[event_callbacks->length] = callback;
 	event_callbacks->length = new_callback_array_len;
@@ -67,10 +66,9 @@ void pong_events_pushEvent(enum PongEventType event_type, ...) {
 	unsigned int new_event_queue_len = event_queue.length + 1;
 	struct PongEvent **new_event_queue = realloc(event_queue.events, sizeof (struct PongEvent *) * new_event_queue_len);
 	if (!new_event_queue) {
-		PONG_LOG("Could not push event: Unable to allocate memory for event queue!", PONG_LOG_WARNING);
 		free(event);
 		free(new_event_queue);
-		return;
+		PONG_ERROR("Could not allocate memory for event queue!");
 	}
 	event_queue.events = new_event_queue;
 	event_queue.events[event_queue.length] = event;
@@ -86,7 +84,7 @@ void pong_events_pollEvents() {
 		struct PongEvent *event = event_queue.events[--event_queue.length];
 		PONG_LOG("Handling event type %i...", PONG_LOG_VERBOSE, event->type);
 		struct PongEventCallbackArray *event_callbacks = events_callbacks + event->type;
-		bool is_handled = false;
+		unsigned int is_handled = 0;
 		for (unsigned int i = 0; !is_handled && i < event_callbacks->length; i++)
 			is_handled = pong_events_internal_executeCallback(event_callbacks->callbacks[i], event->type, event->arguments);
 		if (is_handled)
@@ -114,24 +112,23 @@ void pong_events_cleanup() {
 
 struct PongEvent *pong_events_internal_createEvent(enum PongEventType event_type, va_list args) {
 	struct PongEvent *event = malloc(sizeof (struct PongEvent));
+	if (!event)
+		PONG_ERROR("Could not allocate memory for event!");
 	switch (event_type) {
 		case PONG_EVENT_FOCUS: *event = (struct PongEvent) { PONG_EVENT_FOCUS, { .window_focus_event = { va_arg(args, int) } } }; break;
 		case PONG_EVENT_QUIT:  *event = (struct PongEvent) { PONG_EVENT_QUIT }; break;
-		default:
-			PONG_LOG("Could not create event: Invalid event type %i!", PONG_LOG_WARNING, event_type);
-			free(event);
-			event = NULL;
+		default: free(event); PONG_ERROR("Attempted to create invalid event type %i!", event_type);
 	}
 	return event;
 }
 
-bool pong_events_internal_executeCallback(PongEventCallback callback, enum PongEventType event_type, union PongEventArguments event_args) {
+unsigned int pong_events_internal_executeCallback(PongEventCallback callback, enum PongEventType event_type, union PongEventArguments event_args) {
 	PONG_LOG("Executing callback %p...", PONG_LOG_VERBOSE, &callback);
 	switch (event_type) {
 		case PONG_EVENT_FOCUS: return callback(event_args.window_focus_event.is_focused);
 		case PONG_EVENT_QUIT:  return callback();
-		default: PONG_LOG("Could not execute callback: Invalid event type %i!", PONG_LOG_WARNING, event_type);
+		default: PONG_ERROR("Attempted to execute callback for invalid event type %i!", event_type);
 	}
-	return false;
+	return 0;
 }
 

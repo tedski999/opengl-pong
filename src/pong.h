@@ -1,7 +1,7 @@
 #ifndef PONG_PONG_H
 #define PONG_PONG_H
 
-int pong_init();
+void pong_init();
 void pong_start();
 void pong_cleanup();
 

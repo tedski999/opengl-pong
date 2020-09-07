@@ -4,7 +4,6 @@
 #include "core.h"
 #include <stdio.h>
 #include <stdarg.h>
-#include <stdbool.h>
 #include <time.h>
 #include <string.h>
 #ifdef PONG_LOGGING_FILE
@@ -124,6 +123,13 @@ int pong_log_internal_init() {
 }
 
 void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...) {
+	va_list args;
+	va_start(args, urgency);
+	pong_log_internal_log_variadic(message, urgency, args);
+	va_end(args);
+}
+
+void pong_log_internal_log_variadic(const char *message, enum PongLogUrgency urgency, va_list args) {
 	if (!PONG_VERBOSE_LOGS && urgency == PONG_LOG_VERBOSE)
 		return;
 
@@ -132,10 +138,7 @@ void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...
 	float time_since_init = (current_time.tv_sec - init_time.tv_sec) + ((float) (current_time.tv_nsec - init_time.tv_nsec) / NSEC_PER_SEC);
 
 	char formatted_message[PONG_LOG_MESG_BUF_SIZE];
-	va_list args;
-	va_start(args, urgency);
 	vsnprintf(formatted_message, sizeof (char[PONG_LOG_MESG_BUF_SIZE]), message, args);
-	va_end(args);
 
 	char log_string[PONG_LOG_MESG_BUF_SIZE];
 	int log_string_len = snprintf(log_string, sizeof (char[PONG_LOG_MESG_BUF_SIZE]), "%.4f %s[%s] %s%s%s\n", time_since_init, log_colors[urgency], urgency_labels[urgency], groups_string, formatted_message, log_colors[PongLogUrgencyCount]);

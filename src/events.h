@@ -1,9 +1,7 @@
 #ifndef PONG_EVENTS_H
 #define PONG_EVENTS_H
 
-#include <stdbool.h>
-
-typedef bool (*PongEventCallback)();
+typedef unsigned int (*PongEventCallback)();
 
 enum PongEventType {
 	PONG_EVENT_FOCUS,
