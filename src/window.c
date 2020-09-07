@@ -72,7 +72,7 @@ void pong_window_internal_errorCallback(int code, const char *description) {
 
 void pong_window_internal_focusCallback(GLFWwindow *context, int is_focused) {
 	PONG_LOG("GLFW window focus callback executed!", PONG_LOG_VERBOSE);
-	pong_events_pushEvent(PONG_EVENT_FOCUS);
+	pong_events_pushEvent(PONG_EVENT_FOCUS, is_focused);
 }
 
 void pong_window_internal_closeCallback(GLFWwindow *context) {

@@ -12,6 +12,7 @@
 #define NSEC_PER_TICK NSEC_PER_SEC / 60
 #define MAX_NSEC_BEHIND NSEC_PER_SEC / 10
 
+static bool pong_internal_focusCallback(int is_focused);
 static bool pong_internal_quitCallback();
 
 static bool is_running;
@@ -28,6 +29,7 @@ int pong_init() {
 	if (pong_window_init())
 		return 1;
 
+	pong_events_addCallback(PONG_EVENT_FOCUS, &pong_internal_focusCallback);
 	pong_events_addCallback(PONG_EVENT_QUIT, &pong_internal_quitCallback);
 	ball = pong_ball_create();
 
@@ -91,6 +93,11 @@ void pong_cleanup() {
 	pong_window_cleanup();
 	pong_resources_cleanup();
 	pong_files_cleanup();
+}
+
+bool pong_internal_focusCallback(int is_focused) {
+	PONG_LOG("Pong focus callback executed! is_focused: %i", PONG_LOG_VERBOSE, is_focused);
+	return true;
 }
 
 bool pong_internal_quitCallback() {

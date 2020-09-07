@@ -35,6 +35,7 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 	- [x] Coloured logs
 	- [x] Verbose log pruning
 	- [x] File output
+	- [ ] Grouping logs
 - [x] **Resource management**
 	- [x] Loading resources from any working directory
 	- [x] Opening ZIP archive with libzip
@@ -71,18 +72,18 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 		- [ ] Loading fonts
 		- [ ] Drawing text
 		- [ ] Scaling text
-- [ ] **Event handling**
+- [x] **Event handling**
 	- [x] Event callbacks
 		- [x] Adding callbacks
 		- [x] Removing callbacks
 		- [x] Clearing all callbacks
 	- [ ] Pushing new events
 		- [x] Adding callbacks to an event queue
-		- [ ] Accepting event arguments
-	- [ ] Polling queued events
+		- [x] Accepting event arguments
+	- [x] Polling queued events
 		- [x] Looping through queued events
 		- [x] Executing relevant callbacks
-		- [ ] Passing event arguments
+		- [x] Passing event arguments
 		- [x] Breaking if event is handled
 		- [x] Clearing allocated event queue space
 - [ ] **Input handling**
@@ -122,5 +123,7 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 		- [x] Hunt down any memory leaks
 		- [x] Fix possible crashes occurring *while handling errors*
 		- [ ] Error-out after resource loading/getting failure
+		- [ ] Exit game gracefully after error (cleanup and such)
+		- [ ] Closing terminal instead of GLFW window fix?
 	- [x] Run a static code analyser over project
 
