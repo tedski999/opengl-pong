@@ -32,13 +32,15 @@ static struct PongEventCallbackArray events_callbacks[PongEventTypeCount];
 void pong_events_addCallback(enum PongEventType event_type, PongEventCallback callback) {
 	PONG_LOG("Adding callback %p for event type %i...", PONG_LOG_VERBOSE, callback, event_type);
 	struct PongEventCallbackArray *event_callbacks = events_callbacks + event_type;
-	PongEventCallback *new_callback_array = realloc(event_callbacks->callbacks, sizeof (PongEventCallback) * ++event_callbacks->length);
+	unsigned int new_callback_array_len = event_callbacks->length + 1;
+	PongEventCallback *new_callback_array = realloc(event_callbacks->callbacks, sizeof (PongEventCallback) * new_callback_array_len);
 	if (!new_callback_array) {
 		PONG_LOG("Error reallocating memory for callback array!", PONG_LOG_WARNING);
 		return;
 	}
 	event_callbacks->callbacks = new_callback_array;
-	event_callbacks->callbacks[event_callbacks->length - 1] = callback;
+	event_callbacks->callbacks[event_callbacks->length] = callback;
+	event_callbacks->length = new_callback_array_len;
 }
 
 void pong_events_removeCallback(enum PongEventType event_type, PongEventCallback callback) {
@@ -52,12 +54,6 @@ void pong_events_removeCallback(enum PongEventType event_type, PongEventCallback
 			occurences++;
 	}
 	event_callbacks->length -= occurences;
-	PongEventCallback *new_callback_array = realloc(event_callbacks->callbacks, sizeof (PongEventCallback) * event_callbacks->length);
-	if (!new_callback_array) {
-		PONG_LOG("Error reallocating memory for callback array!", PONG_LOG_WARNING);
-		return;
-	}
-	event_callbacks->callbacks = new_callback_array;
 }
 
 void pong_events_pushEvent(enum PongEventType event_type, ...) {
@@ -68,7 +64,8 @@ void pong_events_pushEvent(enum PongEventType event_type, ...) {
 	va_end(args);
 	if (!event)
 		return;
-	struct PongEvent **new_event_queue = realloc(event_queue.events, sizeof (struct PongEvent *) * ++event_queue.length);
+	unsigned int new_event_queue_len = event_queue.length + 1;
+	struct PongEvent **new_event_queue = realloc(event_queue.events, sizeof (struct PongEvent *) * new_event_queue_len);
 	if (!new_event_queue) {
 		PONG_LOG("Could not push event: Unable to allocate memory for event queue!", PONG_LOG_WARNING);
 		free(event);
@@ -76,7 +73,8 @@ void pong_events_pushEvent(enum PongEventType event_type, ...) {
 		return;
 	}
 	event_queue.events = new_event_queue;
-	event_queue.events[event_queue.length - 1] = event;
+	event_queue.events[event_queue.length] = event;
+	event_queue.length = new_event_queue_len;
 }
 
 void pong_events_pollEvents() {
