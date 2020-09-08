@@ -12,7 +12,7 @@
 
 static char *data_directory_path;
 
-void pong_files_init() {
+void pong_files_init(void) {
 	PONG_LOG("Initializing file manager...", PONG_LOG_INFO);
 
 	PONG_LOG("Locating data directory...", PONG_LOG_VERBOSE);
@@ -42,11 +42,11 @@ void pong_files_init() {
 	PONG_LOG("File manager initialized to '%s'.", PONG_LOG_VERBOSE, data_directory_path);
 }
 
-const char *pong_files_getDataDirectoryPath() {
+const char *pong_files_getDataDirectoryPath(void) {
 	return (const char *) data_directory_path;
 }
 
-void pong_files_cleanup() {
+void pong_files_cleanup(void) {
 	PONG_LOG("Cleaning up file manager...", PONG_LOG_INFO);
 	free(data_directory_path);
 }

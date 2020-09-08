@@ -77,7 +77,7 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 		- [x] Adding callbacks
 		- [x] Removing callbacks
 		- [x] Clearing all callbacks
-	- [ ] Pushing new events
+	- [x] Pushing new events
 		- [x] Adding callbacks to an event queue
 		- [x] Accepting event arguments
 	- [x] Polling queued events
@@ -111,6 +111,7 @@ This list is not exhaustive nor final. There may also be TODO and FIXME labeled 
 		- [ ] Win/Lose text
 		- [ ] Menu system?
 - [ ] **Other**
+	- [ ] The Great Constanting - const everything up
 	- [ ] Write up code documentation
 	- [ ] Write up a README
 		- [ ] Description

@@ -12,8 +12,8 @@ enum PongEventType {
 void pong_events_addCallback(enum PongEventType event_type, PongEventCallback callback);
 void pong_events_removeCallback(enum PongEventType event_type, PongEventCallback callback);
 void pong_events_pushEvent(enum PongEventType event_type, ...);
-void pong_events_pollEvents();
-void pong_events_cleanup();
+void pong_events_pollEvents(void);
+void pong_events_cleanup(void);
 
 #endif // PONG_EVENTS_H
 

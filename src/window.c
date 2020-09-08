@@ -39,16 +39,16 @@ void pong_window_init() {
 	pong_renderer_init();
 }
 
-void pong_window_update() {
+void pong_window_update(void) {
 	glfwPollEvents();
 }
 
-void pong_window_render() {
+void pong_window_render(void) {
 	glfwSwapBuffers(window);
 	pong_renderer_clearScreen();
 }
 
-void pong_window_cleanup() {
+void pong_window_cleanup(void) {
 	PONG_LOG("Cleaning up GLFW window...", PONG_LOG_INFO);
 	if (window)
 		glfwDestroyWindow(window);
@@ -56,16 +56,16 @@ void pong_window_cleanup() {
 	pong_renderer_cleanup();
 }
 
-void pong_window_internal_errorCallback(int code, const char *description) {
+static void pong_window_internal_errorCallback(int code, const char *description) {
 	PONG_LOG("GLFW ERROR %i: %s", PONG_LOG_WARNING, code, description);
 }
 
-void pong_window_internal_focusCallback(GLFWwindow *context, int is_focused) {
+static void pong_window_internal_focusCallback(GLFWwindow *context, int is_focused) {
 	PONG_LOG("GLFW window focus callback executed!", PONG_LOG_VERBOSE);
 	pong_events_pushEvent(PONG_EVENT_FOCUS, is_focused);
 }
 
-void pong_window_internal_closeCallback(GLFWwindow *context) {
+static void pong_window_internal_closeCallback(GLFWwindow *context) {
 	PONG_LOG("GLFW window close callback executed!", PONG_LOG_VERBOSE);
 	pong_events_pushEvent(PONG_EVENT_QUIT);
 }

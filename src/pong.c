@@ -17,7 +17,7 @@ static unsigned int pong_internal_quitCallback();
 static unsigned int is_running;
 static struct PongBall *ball;
 
-void pong_init() {
+void pong_init(void) {
 	PONG_LOG("Initializing game...", PONG_LOG_NOTEWORTHY);
 	pong_files_init();
 	pong_resources_init();
@@ -28,7 +28,7 @@ void pong_init() {
 	PONG_LOG("Initialization complete!", PONG_LOG_INFO);
 }
 
-void pong_start() {
+void pong_start(void) {
 	unsigned int accumulated_time;
 	struct timespec current_time, previous_time;
 	unsigned int tick_count, draw_count, current_second;
@@ -72,7 +72,7 @@ void pong_start() {
 	PONG_LOG("Exited main game loop!", PONG_LOG_NOTEWORTHY);
 }
 
-void pong_cleanup() {
+void pong_cleanup(void) {
 	PONG_LOG("Cleaning up...", PONG_LOG_NOTEWORTHY);
 	pong_ball_destroy(ball);
 	pong_events_cleanup();
@@ -81,12 +81,12 @@ void pong_cleanup() {
 	pong_files_cleanup();
 }
 
-unsigned int pong_internal_focusCallback(int is_focused) {
+static unsigned int pong_internal_focusCallback(int is_focused) {
 	PONG_LOG("Pong focus callback executed! is_focused: %i", PONG_LOG_VERBOSE, is_focused);
 	return 1;
 }
 
-unsigned int pong_internal_quitCallback() {
+static unsigned int pong_internal_quitCallback(void) {
 	PONG_LOG("Pong quit callback executed!", PONG_LOG_VERBOSE);
 	is_running = 0;
 	return 1;

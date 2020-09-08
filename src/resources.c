@@ -24,7 +24,7 @@ static struct PongResourceMap *resource_map;
 static unsigned int resource_map_count_cur;
 static unsigned int resource_map_count_max;
 
-void pong_resources_init() {
+void pong_resources_init(void) {
 	PONG_LOG("Initializing resource manager...", PONG_LOG_INFO);
 
 	const char *data_directory = pong_files_getDataDirectoryPath();
@@ -133,7 +133,7 @@ void pong_resources_changeResourceMapCount(int count_change) {
 	PONG_LOG("Successfully changed size of resource map!", PONG_LOG_VERBOSE);
 }
 
-void pong_resources_cleanup() {
+void pong_resources_cleanup(void) {
 	PONG_LOG("Cleaning up resource manager...", PONG_LOG_INFO);
 	for (int hash_index = 0; hash_index < resource_map_count_max; hash_index++)
 		pong_resources_internal_deallocateResource(hash_index);
@@ -143,7 +143,7 @@ void pong_resources_cleanup() {
 }
 
 // Using djb2 hashing algorithm because I'm that basic
-unsigned int pong_resources_internal_getResourceMapHashIndex(const char *key) {
+static unsigned int pong_resources_internal_getResourceMapHashIndex(const char *key) {
 	const char *key_char = key;
 	unsigned int hash_index = 5381;
 	while (*key_char++)
@@ -154,7 +154,7 @@ unsigned int pong_resources_internal_getResourceMapHashIndex(const char *key) {
 	return hash_index;
 }
 
-void pong_resources_internal_deallocateResource(unsigned int hash_index) {
+static void pong_resources_internal_deallocateResource(unsigned int hash_index) {
 	free(resource_map[hash_index].data);
 	resource_map[hash_index].key = NULL;
 	resource_map[hash_index].data = NULL;

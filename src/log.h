@@ -22,13 +22,13 @@ enum PongLogUrgency {
 	PongLogUrgencyCount
 };
 
-int pong_log_internal_init();
+int pong_log_internal_init(void);
 void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...);
 void pong_log_internal_log_variadic(const char *message, enum PongLogUrgency urgency, va_list args);
 void pong_log_internal_pushSubgroup(const char *group_title);
-void pong_log_internal_popSubgroup();
-void pong_log_internal_clearSubgroups();
-void pong_log_internal_cleanup();
+void pong_log_internal_popSubgroup(void);
+void pong_log_internal_clearSubgroups(void);
+void pong_log_internal_cleanup(void);
 
 #else
 

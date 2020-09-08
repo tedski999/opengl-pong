@@ -24,8 +24,8 @@ struct PongEventCallbackArray {
 	unsigned int length;
 };
 
-struct PongEvent *pong_events_internal_createEvent(enum PongEventType event_type, va_list args);
-unsigned int pong_events_internal_executeCallback(PongEventCallback callback, enum PongEventType event_type, union PongEventArguments event_args);
+static struct PongEvent *pong_events_internal_createEvent(enum PongEventType event_type, va_list args);
+static unsigned int pong_events_internal_executeCallback(PongEventCallback callback, enum PongEventType event_type, union PongEventArguments event_args);
 
 static struct PongEventArray event_queue;
 static struct PongEventCallbackArray events_callbacks[PongEventTypeCount];
@@ -75,7 +75,7 @@ void pong_events_pushEvent(enum PongEventType event_type, ...) {
 	event_queue.length = new_event_queue_len;
 }
 
-void pong_events_pollEvents() {
+void pong_events_pollEvents(void) {
 	if (!event_queue.length)
 		return;
 
@@ -99,7 +99,7 @@ void pong_events_pollEvents() {
 	event_queue.events = NULL;
 }
 
-void pong_events_cleanup() {
+void pong_events_cleanup(void) {
 	PONG_LOG("Cleaning up events...", PONG_LOG_INFO);
 	PONG_LOG("Clearing any remaining events...", PONG_LOG_VERBOSE);
 	while (event_queue.length--)
@@ -110,7 +110,7 @@ void pong_events_cleanup() {
 		free(events_callbacks[i].callbacks);
 }
 
-struct PongEvent *pong_events_internal_createEvent(enum PongEventType event_type, va_list args) {
+static struct PongEvent *pong_events_internal_createEvent(enum PongEventType event_type, va_list args) {
 	struct PongEvent *event = malloc(sizeof (struct PongEvent));
 	if (!event)
 		PONG_ERROR("Could not allocate memory for event!");
@@ -122,7 +122,7 @@ struct PongEvent *pong_events_internal_createEvent(enum PongEventType event_type
 	return event;
 }
 
-unsigned int pong_events_internal_executeCallback(PongEventCallback callback, enum PongEventType event_type, union PongEventArguments event_args) {
+static unsigned int pong_events_internal_executeCallback(PongEventCallback callback, enum PongEventType event_type, union PongEventArguments event_args) {
 	PONG_LOG("Executing callback %p...", PONG_LOG_VERBOSE, &callback);
 	switch (event_type) {
 		case PONG_EVENT_FOCUS: return callback(event_args.window_focus_event.is_focused);

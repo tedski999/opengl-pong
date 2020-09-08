@@ -43,7 +43,7 @@ static unsigned int group_titles_len;
 static char *groups_string;
 static struct timespec init_time;
 
-int pong_log_internal_init() {
+int pong_log_internal_init(void) {
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	time_t now = time(NULL);
 	struct tm *time_raw = localtime(&now);
@@ -168,21 +168,21 @@ void pong_log_internal_pushSubgroup(const char *group_title) {
 	pong_log_internal_generateGroupsString();
 }
 
-void pong_log_internal_popSubgroup() {
+void pong_log_internal_popSubgroup(void) {
 	if (group_titles_len) {
 		group_titles_len--;
 		pong_log_internal_generateGroupsString();
 	}
 }
 
-void pong_log_internal_clearSubgroups() {
+void pong_log_internal_clearSubgroups(void) {
 	if (group_titles_len) {
 		group_titles_len = 0;
 		pong_log_internal_generateGroupsString();
 	}
 }
 
-void pong_log_internal_generateGroupsString() {
+void pong_log_internal_generateGroupsString(void) {
 	if (!group_titles_len) {
 		free(groups_string);
 		 groups_string = strdup("");
@@ -207,7 +207,7 @@ void pong_log_internal_generateGroupsString() {
 	}
 }
 
-void pong_log_internal_cleanup() {
+void pong_log_internal_cleanup(void) {
 	printf("Clearing remaining log subgroups...\n");
 	free(group_titles);
 	free(groups_string);

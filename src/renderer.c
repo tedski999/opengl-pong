@@ -18,7 +18,7 @@ static void pong_renderer_internal_glDebugMessageCallback(GLenum source, GLenum 
 static GLuint program_id;
 static GLuint rect_vao_id;
 
-void pong_renderer_init() {
+void pong_renderer_init(void) {
 	PONG_LOG("Initializing renderer...", PONG_LOG_INFO);
 
 	int gl_version = gladLoadGL(glfwGetProcAddress);
@@ -118,17 +118,17 @@ void pong_renderer_drawrect(float x, float y, float w, float h) {
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, NULL);
 }
 
-void pong_renderer_clearScreen() {
+void pong_renderer_clearScreen(void) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void pong_renderer_cleanup() {
+void pong_renderer_cleanup(void) {
 	PONG_LOG("Cleaning up renderer...", PONG_LOG_INFO);
 	if (program_id)
 		glDeleteProgram(program_id);
 }
 
-GLuint pong_renderer_internal_compileShader(const char *source, GLenum type) {
+static GLuint pong_renderer_internal_compileShader(const char *source, GLenum type) {
 	PONG_LOG("Compiling shader...", PONG_LOG_VERBOSE);
 	GLuint shader_id = glCreateShader(type);
 	glShaderSource(shader_id, 1, &source, NULL);
@@ -145,7 +145,7 @@ GLuint pong_renderer_internal_compileShader(const char *source, GLenum type) {
 	return shader_id;
 }
 
-GLuint pong_renderer_internal_linkShaders(GLuint *shader_ids, unsigned int count) {
+static GLuint pong_renderer_internal_linkShaders(GLuint *shader_ids, unsigned int count) {
 	PONG_LOG("Linking %i shaders into a program...", PONG_LOG_VERBOSE, count);
 	GLuint program_id = glCreateProgram();
 	while (count--)
