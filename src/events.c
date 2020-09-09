@@ -2,7 +2,6 @@
 #include "log.h"
 #include "error.h"
 #include <stdlib.h>
-#include <stdarg.h>
 
 // TODO: each event is as large as the largest event, use pointers to structs?
 union PongEventArguments {
@@ -24,11 +23,21 @@ struct PongEventCallbackArray {
 	unsigned int length;
 };
 
-static struct PongEvent *pong_events_internal_createEvent(enum PongEventType event_type, va_list args);
+static void pong_events_internal_pushEvent(struct PongEvent event);
 static unsigned int pong_events_internal_executeCallback(PongEventCallback callback, enum PongEventType event_type, union PongEventArguments event_args);
 
 static struct PongEventArray event_queue;
 static struct PongEventCallbackArray events_callbacks[PongEventTypeCount];
+
+void pong_events_pushFocusEvent(int is_focused) {
+	struct PongEvent event = (struct PongEvent) { PONG_EVENT_FOCUS, { .window_focus_event = { is_focused } } };
+	pong_events_internal_pushEvent(event);
+}
+
+void pong_events_pushQuitEvent(void) {
+	struct PongEvent event = (struct PongEvent) { PONG_EVENT_QUIT };
+	pong_events_internal_pushEvent(event);
+}
 
 void pong_events_addCallback(enum PongEventType event_type, PongEventCallback callback) {
 	PONG_LOG("Adding callback %p for event type %i...", PONG_LOG_VERBOSE, callback, event_type);
@@ -53,26 +62,6 @@ void pong_events_removeCallback(enum PongEventType event_type, PongEventCallback
 			occurences++;
 	}
 	event_callbacks->length -= occurences;
-}
-
-void pong_events_pushEvent(enum PongEventType event_type, ...) {
-	PONG_LOG("Pushing event type %i...", PONG_LOG_VERBOSE, event_type);
-	va_list args;
-	va_start(args, event_type);
-	struct PongEvent *event = pong_events_internal_createEvent(event_type, args);
-	va_end(args);
-	if (!event)
-		return;
-	unsigned int new_event_queue_len = event_queue.length + 1;
-	struct PongEvent **new_event_queue = realloc(event_queue.events, sizeof (struct PongEvent *) * new_event_queue_len);
-	if (!new_event_queue) {
-		free(event);
-		free(new_event_queue);
-		PONG_ERROR("Could not allocate memory for event queue!");
-	}
-	event_queue.events = new_event_queue;
-	event_queue.events[event_queue.length] = event;
-	event_queue.length = new_event_queue_len;
 }
 
 void pong_events_pollEvents(void) {
@@ -110,16 +99,17 @@ void pong_events_cleanup(void) {
 		free(events_callbacks[i].callbacks);
 }
 
-static struct PongEvent *pong_events_internal_createEvent(enum PongEventType event_type, va_list args) {
+static void pong_events_internal_pushEvent(struct PongEvent event_data) {
+	PONG_LOG("Pushing event type %i...", PONG_LOG_VERBOSE, event_data.type);
+	unsigned int new_event_queue_len = event_queue.length + 1;
+	struct PongEvent **new_event_queue = realloc(event_queue.events, sizeof (struct PongEvent *) * new_event_queue_len);
 	struct PongEvent *event = malloc(sizeof (struct PongEvent));
-	if (!event)
-		PONG_ERROR("Could not allocate memory for event!");
-	switch (event_type) {
-		case PONG_EVENT_FOCUS: *event = (struct PongEvent) { PONG_EVENT_FOCUS, { .window_focus_event = { va_arg(args, int) } } }; break;
-		case PONG_EVENT_QUIT:  *event = (struct PongEvent) { PONG_EVENT_QUIT }; break;
-		default: free(event); PONG_ERROR("Attempted to create invalid event type %i!", event_type);
-	}
-	return event;
+	if (!new_event_queue || !event)
+		PONG_ERROR("Could not allocate memory for new event!");
+	*event = event_data;
+	event_queue.events = new_event_queue;
+	event_queue.events[event_queue.length] = event;
+	event_queue.length = new_event_queue_len;
 }
 
 static unsigned int pong_events_internal_executeCallback(PongEventCallback callback, enum PongEventType event_type, union PongEventArguments event_args) {
