@@ -7,22 +7,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PONG_RESOURCES_MAP_INITIAL_COUNT 8
-#define PONG_RESOURCES_MAP_MAX_USED_BUCKET_RATIO 0.8f
-#define PONG_RESOURCES_MAP_AUTOMATIC_COUNT_INCREASE 8
+#define PONG_RESOURCES_MAP_TABLE_INITIAL_BUCKET_COUNT 8
+#define PONG_RESOURCES_MAP_TABLE_MAX_USED_BUCKETS_RATIO 0.8f
 
 struct PongResourceMap {
 	const char *key;
 	void *data;
 };
 
-static unsigned int pong_resources_internal_getResourceMapHashIndex(const char *key);
-static void pong_resources_internal_deallocateResource(unsigned int hash_index);
+static unsigned int pong_resources_internal_getHashIndex(const char *key);
+static struct PongResourceMap *pong_resources_internal_getResourceMap(const char *key);
+static struct PongResourceMap *pong_resources_internal_getEmptyResourceMap(const char *key);
+static void pong_resources_internal_deleteResourceMap(struct PongResourceMap *map);
+static void pong_resources_internal_setBucketCount(unsigned int new_bucket_count);
 
 static struct zip *zip_archive;
-static struct PongResourceMap *resource_map;
-static unsigned int resource_map_count_cur;
-static unsigned int resource_map_count_max;
+static struct PongResourceMap *resource_map_table;
+static unsigned int resource_map_table_bucket_count;
+static unsigned int resource_map_table_used_bucket_count;
 
 void pong_resources_init(void) {
 	PONG_LOG("Initializing resource manager...", PONG_LOG_INFO);
@@ -43,17 +45,17 @@ void pong_resources_init(void) {
 		PONG_ERROR("An error occurred while trying to open resource data archive: %s", zip_error_strerror(&error));
 	}
 
-	PONG_LOG("Initializing resource map...", PONG_LOG_VERBOSE);
-	resource_map = calloc(1, sizeof (struct PongResourceMap) * PONG_RESOURCES_MAP_INITIAL_COUNT);
-	if (!resource_map)
+	PONG_LOG("Initializing resource map table...", PONG_LOG_VERBOSE);
+	resource_map_table_bucket_count = PONG_RESOURCES_MAP_TABLE_INITIAL_BUCKET_COUNT;
+	resource_map_table = calloc(1, sizeof (struct PongResourceMap) * resource_map_table_bucket_count);
+	if (!resource_map_table)
 		PONG_ERROR("Could not allocate memory for resource map!");
-	resource_map_count_max = PONG_RESOURCES_MAP_INITIAL_COUNT;
 
 	PONG_LOG("Resource manager initialized!", PONG_LOG_VERBOSE);
 }
 
 void pong_resources_load(const char *file_path, const char *resource_id) {
-	PONG_LOG("Loading resource at '%s' as '%s'...", PONG_LOG_VERBOSE, file_path, resource_id);
+	PONG_LOG("Loading resource at '%s' as '%s'...", PONG_LOG_INFO, file_path, resource_id);
 
 	PONG_LOG("Querying resource...", PONG_LOG_VERBOSE);
 	struct zip_stat stat;
@@ -84,80 +86,102 @@ void pong_resources_load(const char *file_path, const char *resource_id) {
 	data[stat.size] = '\0';
 
 	PONG_LOG("Mapping resource...", PONG_LOG_VERBOSE);
-	if (++resource_map_count_cur > resource_map_count_max * PONG_RESOURCES_MAP_MAX_USED_BUCKET_RATIO) {
-		PONG_LOG("Resource map is over-encumbered (%i/%i buckets used), automatically adding more buckets...", PONG_LOG_WARNING, resource_map_count_cur - 1, resource_map_count_max);
-		pong_resources_changeResourceMapCount(PONG_RESOURCES_MAP_AUTOMATIC_COUNT_INCREASE);
-	}
-	unsigned int hash_index = pong_resources_internal_getResourceMapHashIndex(resource_id);
-	if (resource_map[hash_index].key) {
-		PONG_LOG("Resource ID '%s' already exists, overwriting loaded data with new resource '%s'...", PONG_LOG_WARNING, resource_map[hash_index].key, resource_id);
-		pong_resources_internal_deallocateResource(hash_index);
-	}
-	resource_map[hash_index] = (struct PongResourceMap) { resource_id, data };
-
+	struct PongResourceMap *resource_map = pong_resources_internal_getEmptyResourceMap(resource_id);
+	*resource_map = (struct PongResourceMap) { resource_id, data };
+	resource_map_table_used_bucket_count++;
+	
 	PONG_LOG("Resource '%s' successfully loaded and mapped to '%s'...", PONG_LOG_VERBOSE, file_path, resource_id);
+
+	if (resource_map_table_used_bucket_count >= resource_map_table_bucket_count * PONG_RESOURCES_MAP_TABLE_MAX_USED_BUCKETS_RATIO) {
+		PONG_LOG("Resource map tree is over-encumbered (%i/%i buckets used), doubling bucket count...", PONG_LOG_WARNING, resource_map_table_used_bucket_count, resource_map_table_bucket_count);
+		pong_resources_internal_setBucketCount(resource_map_table_bucket_count * 2);
+	}
 }
 
 void pong_resources_unload(const char *resource_id) {
 	PONG_LOG("Deallocating resource '%s'...", PONG_LOG_VERBOSE, resource_id);
-	unsigned int hash_index = pong_resources_internal_getResourceMapHashIndex(resource_id);
-	pong_resources_internal_deallocateResource(hash_index);
+	pong_resources_internal_deleteResourceMap(pong_resources_internal_getResourceMap(resource_id));
 }
 
 void *pong_resources_get(const char *resource_id) {
-	unsigned int hash_index = pong_resources_internal_getResourceMapHashIndex(resource_id);
-	return resource_map[hash_index].data;
-}
-
-void pong_resources_changeResourceMapCount(int count_change) {
-	if ((int) resource_map_count_max + count_change < resource_map_count_cur)
-		PONG_ERROR("Attempted to change resource map bucket count from %i to %i! %i of the buckets are in use.", resource_map_count_max, (int) resource_map_count_max + count_change, resource_map_count_cur);
-
-	PONG_LOG("Changing resource map bucket count from %i to %i...", PONG_LOG_VERBOSE, resource_map_count_max, resource_map_count_max + count_change);
-	struct PongResourceMap *old_resource_map = resource_map;
-	unsigned int old_resource_map_count = resource_map_count_max;
-	resource_map_count_max += count_change;
-	resource_map = calloc(1, sizeof (struct PongResourceMap) * resource_map_count_max);
-	if (!resource_map)
-		PONG_ERROR("Could not allocate memory for resource map!");
-
-	PONG_LOG("Rehashing resource map entries...", PONG_LOG_VERBOSE);
-	for (unsigned int old_hash_index = 0; old_hash_index < old_resource_map_count; old_hash_index++) {
-		if (old_resource_map[old_hash_index].key) {
-			unsigned int new_hash_index = pong_resources_internal_getResourceMapHashIndex(old_resource_map[old_hash_index].key);
-			resource_map[new_hash_index] = old_resource_map[old_hash_index];
-		}
-	}
-
-	free(old_resource_map);
-	PONG_LOG("Successfully changed size of resource map!", PONG_LOG_VERBOSE);
+	return pong_resources_internal_getResourceMap(resource_id)->data;
 }
 
 void pong_resources_cleanup(void) {
 	PONG_LOG("Cleaning up resource manager...", PONG_LOG_INFO);
-	for (int hash_index = 0; hash_index < resource_map_count_max; hash_index++)
-		pong_resources_internal_deallocateResource(hash_index);
+	PONG_LOG("Clearing resource map table...", PONG_LOG_VERBOSE);
+	struct PongResourceMap *resource_map = resource_map_table;
+	while (resource_map_table_bucket_count--)
+		free(resource_map++->data);
+	free(resource_map_table);
+	PONG_LOG("Closing data archive...", PONG_LOG_VERBOSE);
 	if (zip_archive)
 		zip_close(zip_archive);
-	free(resource_map);
 }
 
 // Using djb2 hashing algorithm because I'm that basic
-static unsigned int pong_resources_internal_getResourceMapHashIndex(const char *key) {
+static unsigned int pong_resources_internal_getHashIndex(const char *key) {
+	if (!resource_map_table_bucket_count)
+		PONG_ERROR("Attempted to find hash index for the key '%s' but the resource map table doesn't even have any buckets!", key);
 	const char *key_char = key;
 	unsigned int hash_index = 5381;
 	while (*key_char++)
 		hash_index = ((hash_index << 5) + hash_index) + *key_char;
-	hash_index %= resource_map_count_max;
-	while (resource_map[hash_index].key && strcmp(resource_map[hash_index].key, key))
-		hash_index = (hash_index + 1) % resource_map_count_max;
-	return hash_index;
+	return hash_index % resource_map_table_bucket_count;
 }
 
-static void pong_resources_internal_deallocateResource(unsigned int hash_index) {
-	free(resource_map[hash_index].data);
-	resource_map[hash_index].key = NULL;
-	resource_map[hash_index].data = NULL;
-	resource_map_count_cur -= 1;
+static struct PongResourceMap *pong_resources_internal_getResourceMap(const char *key) {
+	unsigned int attempt = 0, hash_index = pong_resources_internal_getHashIndex(key);
+	while (resource_map_table[hash_index].key && strcmp(resource_map_table[hash_index].key, key)) {
+		if (++attempt >= resource_map_table_bucket_count)
+			PONG_ERROR("Could not locate resource with ID '%s'!", key);
+		hash_index = (hash_index + 1) % resource_map_table_bucket_count;
+	}
+	if (!resource_map_table[hash_index].data)
+		PONG_ERROR("Attempted to get resource with ID '%s' but it's already been unloaded!");
+	return resource_map_table + hash_index;
+}
+
+static struct PongResourceMap *pong_resources_internal_getEmptyResourceMap(const char *key) {
+	unsigned int attempt = 0, hash_index = pong_resources_internal_getHashIndex(key);
+	while (resource_map_table[hash_index].data) {
+		if (!strcmp(resource_map_table[hash_index].key, key))
+			PONG_ERROR("Attempted to overwrite resource ID '%s'!", key);
+		if (++attempt >= resource_map_table_bucket_count)
+			PONG_ERROR("Could not find available empty resource map for resource with ID '%s'!", key);
+		hash_index = (hash_index + 1) % resource_map_table_bucket_count;
+	}
+	return resource_map_table + hash_index;
+}
+
+static void pong_resources_internal_deleteResourceMap(struct PongResourceMap *resource_map) {
+	free(resource_map->data);
+	resource_map->data = NULL;
+	resource_map_table_used_bucket_count--;
+}
+
+static void pong_resources_internal_setBucketCount(unsigned int new_bucket_count) {
+	PONG_LOG("Changing max number of resources from %i to %i...", PONG_LOG_INFO, resource_map_table_bucket_count, new_bucket_count);
+
+	struct PongResourceMap *old_resource_map_table = resource_map_table;
+	unsigned int old_resource_map_table_bucket_count = resource_map_table_bucket_count;
+	resource_map_table_bucket_count = new_bucket_count;
+	resource_map_table = calloc(1, sizeof (struct PongResourceMap) * resource_map_table_bucket_count);
+	if (!resource_map_table) {
+		resource_map_table = old_resource_map_table;
+		resource_map_table_bucket_count = old_resource_map_table_bucket_count;
+		PONG_ERROR("Could not allocate memory for resource map!");
+	}
+
+	PONG_LOG("Rehashing resource map entries...", PONG_LOG_VERBOSE);
+	for (struct PongResourceMap *old_resource_map = old_resource_map_table; old_resource_map_table_bucket_count--; old_resource_map++) {
+		if (old_resource_map->data) {
+			struct PongResourceMap *new_resource_map = pong_resources_internal_getEmptyResourceMap(old_resource_map->key);
+			*new_resource_map = *old_resource_map;
+		}
+	}
+
+	free(old_resource_map_table);
+	PONG_LOG("Successfully changed size of resource map table!", PONG_LOG_VERBOSE);
 }
 
