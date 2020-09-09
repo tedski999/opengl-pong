@@ -40,6 +40,7 @@ void pong_events_pushQuitEvent(void) {
 }
 
 void pong_events_addCallback(enum PongEventType event_type, PongEventCallback callback) {
+	PONG_LOG_SUBGROUP_START("AddEventCallback");
 	PONG_LOG("Adding callback %p for event type %i...", PONG_LOG_VERBOSE, callback, event_type);
 	struct PongEventCallbackArray *event_callbacks = events_callbacks + event_type;
 	unsigned int new_callback_array_len = event_callbacks->length + 1;
@@ -49,9 +50,11 @@ void pong_events_addCallback(enum PongEventType event_type, PongEventCallback ca
 	event_callbacks->callbacks = new_callback_array;
 	event_callbacks->callbacks[event_callbacks->length] = callback;
 	event_callbacks->length = new_callback_array_len;
+	PONG_LOG_SUBGROUP_END();
 }
 
 void pong_events_removeCallback(enum PongEventType event_type, PongEventCallback callback) {
+	PONG_LOG_SUBGROUP_START("RemoveEventCallback");
 	PONG_LOG("Removing callback %p from event type %i...", PONG_LOG_VERBOSE, callback, event_type);
 	struct PongEventCallbackArray *event_callbacks = events_callbacks + event_type;
 	unsigned int shift, occurences;
@@ -62,12 +65,14 @@ void pong_events_removeCallback(enum PongEventType event_type, PongEventCallback
 			occurences++;
 	}
 	event_callbacks->length -= occurences;
+	PONG_LOG_SUBGROUP_END();
 }
 
 void pong_events_pollEvents(void) {
 	if (!event_queue.length)
 		return;
 
+	PONG_LOG_SUBGROUP_START("PollEvents");
 	PONG_LOG("Processing events (%i queued)...", PONG_LOG_VERBOSE, event_queue.length);
 	do {
 		struct PongEvent *event = event_queue.events[--event_queue.length];
@@ -86,9 +91,11 @@ void pong_events_pollEvents(void) {
 	PONG_LOG("All events processed.", PONG_LOG_VERBOSE);
 	free(event_queue.events);
 	event_queue.events = NULL;
+	PONG_LOG_SUBGROUP_END();
 }
 
 void pong_events_cleanup(void) {
+	PONG_LOG_SUBGROUP_START("Events");
 	PONG_LOG("Cleaning up events...", PONG_LOG_INFO);
 	PONG_LOG("Clearing any remaining events...", PONG_LOG_VERBOSE);
 	while (event_queue.length--)
@@ -97,9 +104,11 @@ void pong_events_cleanup(void) {
 	PONG_LOG("Clearing list of event callbacks...", PONG_LOG_VERBOSE);
 	for (unsigned int i = 0; i < PongEventTypeCount; i++)
 		free(events_callbacks[i].callbacks);
+	PONG_LOG_SUBGROUP_END();
 }
 
 static void pong_events_internal_pushEvent(struct PongEvent event_data) {
+	PONG_LOG_SUBGROUP_START("PushEvent");
 	PONG_LOG("Pushing event type %i...", PONG_LOG_VERBOSE, event_data.type);
 	unsigned int new_event_queue_len = event_queue.length + 1;
 	struct PongEvent **new_event_queue = realloc(event_queue.events, sizeof (struct PongEvent *) * new_event_queue_len);
@@ -110,15 +119,19 @@ static void pong_events_internal_pushEvent(struct PongEvent event_data) {
 	event_queue.events = new_event_queue;
 	event_queue.events[event_queue.length] = event;
 	event_queue.length = new_event_queue_len;
+	PONG_LOG_SUBGROUP_END();
 }
 
 static unsigned int pong_events_internal_executeCallback(PongEventCallback callback, enum PongEventType event_type, union PongEventArguments event_args) {
+	PONG_LOG_SUBGROUP_START("ExecEventCallback");
 	PONG_LOG("Executing callback %p...", PONG_LOG_VERBOSE, &callback);
+	unsigned int return_code = 0;
 	switch (event_type) {
-		case PONG_EVENT_FOCUS: return callback(event_args.window_focus_event.is_focused);
-		case PONG_EVENT_QUIT:  return callback();
+		case PONG_EVENT_FOCUS: return_code = callback(event_args.window_focus_event.is_focused); break;
+		case PONG_EVENT_QUIT:  return_code = callback(); break;
 		default: PONG_ERROR("Attempted to execute callback for invalid event type %i!", event_type);
 	}
-	return 0;
+	PONG_LOG_SUBGROUP_END();
+	return return_code;
 }
 

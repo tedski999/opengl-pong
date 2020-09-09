@@ -18,6 +18,7 @@ static unsigned int is_running;
 static struct PongBall *ball;
 
 void pong_init(void) {
+	PONG_LOG_SUBGROUP_START("Init");
 	PONG_LOG("Initializing game...", PONG_LOG_NOTEWORTHY);
 	pong_files_init();
 	pong_resources_init();
@@ -26,6 +27,7 @@ void pong_init(void) {
 	pong_events_addCallback(PONG_EVENT_QUIT, &pong_internal_quitCallback);
 	ball = pong_ball_create();
 	PONG_LOG("Initialization complete!", PONG_LOG_INFO);
+	PONG_LOG_SUBGROUP_END();
 }
 
 void pong_start(void) {
@@ -73,12 +75,14 @@ void pong_start(void) {
 }
 
 void pong_cleanup(void) {
+	PONG_LOG_SUBGROUP_START("Clean");
 	PONG_LOG("Cleaning up...", PONG_LOG_NOTEWORTHY);
 	pong_ball_destroy(ball);
 	pong_events_cleanup();
 	pong_window_cleanup();
 	pong_resources_cleanup();
 	pong_files_cleanup();
+	PONG_LOG_SUBGROUP_END();
 }
 
 static unsigned int pong_internal_focusCallback(int is_focused) {

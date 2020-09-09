@@ -19,6 +19,7 @@ static GLuint program_id;
 static GLuint rect_vao_id;
 
 void pong_renderer_init(void) {
+	PONG_LOG_SUBGROUP_START("Renderer");
 	PONG_LOG("Initializing renderer...", PONG_LOG_INFO);
 
 	int gl_version = gladLoadGL(glfwGetProcAddress);
@@ -66,6 +67,7 @@ void pong_renderer_init(void) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rect_ibo_id);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof (GLushort) * 2 * 3, rect_indices, GL_STATIC_DRAW);
 
+	PONG_LOG_SUBGROUP_START("Shaders");
 	PONG_LOG("Loading shaders...", PONG_LOG_VERBOSE);
 	pong_resources_load("res/shaders/basic.vert", "basicVertShader");
 	pong_resources_load("res/shaders/basic.frag", "basicFragShader");
@@ -89,6 +91,7 @@ void pong_renderer_init(void) {
 	glm_ortho(-PONG_WINDOW_WIDTH / 2.f, PONG_WINDOW_WIDTH / 2.f, PONG_WINDOW_HEIGHT / 2.f, -PONG_WINDOW_HEIGHT / 2.f, 1.f, -1.f, projection_matrix);
 	GLint projection_uniform_id = glGetUniformLocation(program_id, "projection"); // TODO: should projection (set only once) be a uniform?
 	glUniformMatrix4fv(projection_uniform_id, 1, GL_FALSE, (float *) projection_matrix);
+	PONG_LOG_SUBGROUP_END();
 
 	PONG_LOG("Finishing OpenGL configuration...", PONG_LOG_VERBOSE);
 	glBindVertexArray(0);
@@ -99,9 +102,11 @@ void pong_renderer_init(void) {
 	pong_renderer_clearScreen();
 
 	PONG_LOG("Renderer initialized!", PONG_LOG_VERBOSE);
+	PONG_LOG_SUBGROUP_END();
 }
 
 void pong_renderer_drawrect(float x, float y, float w, float h) {
+	PONG_LOG_SUBGROUP_START("DrawRect");
 	glUseProgram(program_id);
 
 	mat4 transformation_matrix = GLM_MAT4_IDENTITY_INIT;
@@ -116,16 +121,21 @@ void pong_renderer_drawrect(float x, float y, float w, float h) {
 
 	glBindVertexArray(rect_vao_id);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, NULL);
+	PONG_LOG_SUBGROUP_END();
 }
 
 void pong_renderer_clearScreen(void) {
+	PONG_LOG_SUBGROUP_START("ClearScreen");
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	PONG_LOG_SUBGROUP_END();
 }
 
 void pong_renderer_cleanup(void) {
+	PONG_LOG_SUBGROUP_START("Renderer");
 	PONG_LOG("Cleaning up renderer...", PONG_LOG_INFO);
 	if (program_id)
 		glDeleteProgram(program_id);
+	PONG_LOG_SUBGROUP_END();
 }
 
 static GLuint pong_renderer_internal_compileShader(const char *source, GLenum type) {

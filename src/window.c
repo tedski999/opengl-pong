@@ -13,6 +13,7 @@ static void pong_window_internal_closeCallback(GLFWwindow *context);
 static GLFWwindow *window;
 
 void pong_window_init() {
+	PONG_LOG_SUBGROUP_START("Window");
 	PONG_LOG("Initializing GLFW window...", PONG_LOG_INFO);
 	PONG_LOG("Using GLFW v%i.%i", PONG_LOG_INFO, GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR);
 	glfwSetErrorCallback(pong_window_internal_errorCallback);
@@ -37,23 +38,30 @@ void pong_window_init() {
 	PONG_LOG("GLFW window initialized!", PONG_LOG_VERBOSE);
 
 	pong_renderer_init();
+	PONG_LOG_SUBGROUP_END();
 }
 
 void pong_window_update(void) {
+	PONG_LOG_SUBGROUP_START("WinUpdate");
 	glfwPollEvents();
+	PONG_LOG_SUBGROUP_END();
 }
 
 void pong_window_render(void) {
+	PONG_LOG_SUBGROUP_START("WinRender");
 	glfwSwapBuffers(window);
 	pong_renderer_clearScreen();
+	PONG_LOG_SUBGROUP_END();
 }
 
 void pong_window_cleanup(void) {
+	PONG_LOG_SUBGROUP_START("Window");
 	PONG_LOG("Cleaning up GLFW window...", PONG_LOG_INFO);
 	if (window)
 		glfwDestroyWindow(window);
 	glfwTerminate();
 	pong_renderer_cleanup();
+	PONG_LOG_SUBGROUP_END();
 }
 
 static void pong_window_internal_errorCallback(int code, const char *description) {

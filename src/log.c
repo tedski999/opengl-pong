@@ -2,12 +2,12 @@
 
 #include "log.h"
 #include "core.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
 #include <string.h>
-#ifdef PONG_LOGGING_FILE
-#include <stdlib.h>
+#ifdef PONG_FILE_LOGGING
 #include <zlib.h>
 #if PONG_PLATFORM_WINDOWS
 #include <windows.h>
@@ -20,9 +20,6 @@
 #define PONG_LOG_FILE "latest.txt"
 #endif
 
-#define PONG_LOG_TIME_BUF_SIZE 128
-#define PONG_LOG_MESG_BUF_SIZE 256
-
 static void pong_log_internal_generateGroupsString();
 
 #ifdef PONG_COLORED_LOGS
@@ -31,7 +28,7 @@ static const char *log_colors[PongLogUrgencyCount + 1] = { "\033[2;37m", "\033[0
 static const char *log_colors[PongLogUrgencyCount + 1] = { "", "", "", "", "", "" };
 #endif
 
-#ifdef PONG_LOGGING_FILE
+#ifdef PONG_FILE_LOGGING
 static char *log_directory_path;
 static char *log_file_path;
 static char *compressed_log_file_path;
@@ -47,13 +44,22 @@ int pong_log_internal_init(void) {
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	time_t now = time(NULL);
 	struct tm *time_raw = localtime(&now);
-	char time_string[PONG_LOG_TIME_BUF_SIZE];
-	strftime(time_string, sizeof (char) * PONG_LOG_TIME_BUF_SIZE, "%Y-%m-%d %H:%M:%S %Z\n", time_raw);
+	char *time_string = NULL;
+	unsigned int time_string_len = 16; // should need at least 22 chars
+	do {
+		time_string_len *= 2;
+		free(time_string);
+		time_string = malloc(sizeof (char) * time_string_len);
+		if (!time_string) {
+			printf("Could not allocate memory for datetime header message!\n");
+			return 1;
+		}
+	} while (!strftime(time_string, time_string_len, "%Y-%m-%d %H:%M:%S %Z\n", time_raw));
 	printf(time_string);
 
 	pong_log_internal_generateGroupsString();
 
-#ifdef PONG_LOGGING_FILE
+#ifdef PONG_FILE_LOGGING
 	int buffer_used, buffer_size = 64;
 	do {
 		buffer_size *= 2;
@@ -98,8 +104,18 @@ int pong_log_internal_init(void) {
 	strcpy(log_file_path, log_directory_path);
 	strcat(log_file_path, PONG_LOG_FILE);
 
-	char compressed_log_file_name[PONG_LOG_TIME_BUF_SIZE];
-	strftime(compressed_log_file_name, sizeof (char) * PONG_LOG_TIME_BUF_SIZE, "%Y-%m-%dT%H-%M-%S.gz", time_raw);
+	char *compressed_log_file_name = NULL;
+	unsigned int compressed_log_file_name_len = 16; // should only need ~22 chars
+	do {
+		compressed_log_file_name_len *= 2;
+		free(compressed_log_file_name);
+		compressed_log_file_name = malloc(sizeof (char) * compressed_log_file_name_len);
+		if (!compressed_log_file_name) {
+			printf("Could not allocate memory for compressed log file name!\n");
+			return 1;
+		}
+	} while (!strftime(compressed_log_file_name, compressed_log_file_name_len, "%Y-%m-%dT%H-%M-%S.gz", time_raw));
+
 	compressed_log_file_path = malloc(sizeof (char) * (strlen(log_directory_path) + strlen(compressed_log_file_name) + 1));
 	if (!compressed_log_file_path) {
 		printf("Could not allocate memory for compressed log file path!\n");
@@ -109,6 +125,7 @@ int pong_log_internal_init(void) {
 	}
 	strcpy(compressed_log_file_path, log_directory_path);
 	strcat(compressed_log_file_path, compressed_log_file_name);
+	free(compressed_log_file_name);
 
 	mkdir(log_directory_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	FILE *log_file = fopen(log_file_path, "w");
@@ -119,6 +136,7 @@ int pong_log_internal_init(void) {
 	printf("Compressed log file will be located at '%s'.\n", compressed_log_file_path);
 #endif
 
+	free(time_string);
 	return 0;
 }
 
@@ -130,31 +148,37 @@ void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...
 }
 
 void pong_log_internal_log_variadic(const char *message, enum PongLogUrgency urgency, va_list args) {
-	if (!PONG_VERBOSE_LOGS && urgency == PONG_LOG_VERBOSE)
+
+#ifndef PONG_VERBOSE_LOGS
+	if (urgency == PONG_LOG_VERBOSE)
 		return;
+#endif
 
 	static struct timespec current_time;
 	clock_gettime(CLOCK_MONOTONIC, &current_time);
 	float time_since_init = (current_time.tv_sec - init_time.tv_sec) + ((float) (current_time.tv_nsec - init_time.tv_nsec) / NSEC_PER_SEC);
 
-	char formatted_message[PONG_LOG_MESG_BUF_SIZE];
-	vsnprintf(formatted_message, sizeof (char[PONG_LOG_MESG_BUF_SIZE]), message, args);
+	va_list args_copy;
+	va_copy(args_copy, args);
+	int formatted_message_len = vsnprintf(NULL, 0, message, args_copy) + 1;
+	va_end(args_copy);
+	char *formatted_message = malloc(sizeof (char) * formatted_message_len);
+	vsprintf(formatted_message, message, args);
 
-	char log_string[PONG_LOG_MESG_BUF_SIZE];
-	int log_string_len = snprintf(log_string, sizeof (char[PONG_LOG_MESG_BUF_SIZE]), "%.4f %s[%s] %s%s%s\n", time_since_init, log_colors[urgency], urgency_labels[urgency], groups_string, formatted_message, log_colors[PongLogUrgencyCount]);
-	if (log_string_len >= PONG_LOG_MESG_BUF_SIZE) {
-		log_string[PONG_LOG_MESG_BUF_SIZE - 2] = '\n';
-		char *str = log_string + PONG_LOG_MESG_BUF_SIZE - 5;
-		do *str = '.'; while (*++str != '\n');
-	}
+	int log_string_len = snprintf(NULL, 0, "%.4f %s[%s] %s%s%s\n", time_since_init, log_colors[urgency], urgency_labels[urgency], groups_string, formatted_message, log_colors[PongLogUrgencyCount]) + 1;
+	char *log_string = malloc(sizeof (char) * log_string_len);
+	sprintf(log_string, "%.4f %s[%s] %s%s%s\n", time_since_init, log_colors[urgency], urgency_labels[urgency], groups_string, formatted_message, log_colors[PongLogUrgencyCount]);
 
 	printf(log_string);
-#ifdef PONG_LOGGING_FILE
+#ifdef PONG_FILE_LOGGING
 	mkdir(log_directory_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	FILE *log_file = fopen(log_file_path, "a");
 	fprintf(log_file, log_string);
 	fclose(log_file);
 #endif
+
+	free(formatted_message);
+	free(log_string);
 }
 
 void pong_log_internal_pushSubgroup(const char *group_title) {
@@ -187,7 +211,7 @@ void pong_log_internal_generateGroupsString(void) {
 		free(groups_string);
 		 groups_string = strdup("");
 	} else {
-		unsigned int new_groups_string_len = 3; // " - "
+		unsigned int new_groups_string_len = 5; // 2 borders + " - "
 		for (unsigned int i = 0; i < group_titles_len; i++)
 			new_groups_string_len += strlen(group_titles[i]) + 1; // +1 for subgroup seperator and final null terminator
 		char *new_groups_string = realloc(groups_string, sizeof (char) * new_groups_string_len);
@@ -196,6 +220,7 @@ void pong_log_internal_generateGroupsString(void) {
 		groups_string = new_groups_string;
 
 		char *groups_str_ptr = groups_string;
+		*groups_str_ptr++ = '(';
 		for (unsigned int i = 0; i < group_titles_len; i++) {
 			const char *title_str_ptr = group_titles[i];
 			while (*title_str_ptr != '\0')
@@ -203,7 +228,7 @@ void pong_log_internal_generateGroupsString(void) {
 			*groups_str_ptr++ = '/';
 		}
 		*--groups_str_ptr = '\0';
-		strcat(groups_string, " - ");
+		strcat(groups_string, ") - ");
 	}
 }
 
@@ -212,7 +237,7 @@ void pong_log_internal_cleanup(void) {
 	free(group_titles);
 	free(groups_string);
 
-#ifdef PONG_LOGGING_FILE
+#ifdef PONG_FILE_LOGGING
 	mkdir(log_directory_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 	printf("Compressing latest log file to '%s'...\n", compressed_log_file_path);

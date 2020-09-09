@@ -23,10 +23,6 @@
 #define PONG_OPENGL_VERSION_MINOR_MIN 3
 #endif
 
-#ifndef PONG_VERBOSE_LOGS
-#define PONG_VERBOSE_LOGS 0
-#endif
-
 #define NSEC_PER_SEC 1000000000
 
 #endif // PONG_CORE_H

@@ -8,10 +8,17 @@
 #define PONG_LOG_INIT() pong_log_internal_init()
 #define PONG_LOG(message, ...) pong_log_internal_log(message, __VA_ARGS__)
 #define PONG_LOG_VARIADIC(message, urgency, args) pong_log_internal_log_variadic(message, urgency, args)
+#define PONG_LOG_CLEANUP() pong_log_internal_cleanup()
+
+#ifdef PONG_VERBOSE_LOGS
 #define PONG_LOG_SUBGROUP_START(group_title) pong_log_internal_pushSubgroup(group_title)
 #define PONG_LOG_SUBGROUP_END() pong_log_internal_popSubgroup()
 #define PONG_LOG_CLEAR_SUBGROUPS() pong_log_internal_clearSubgroups()
-#define PONG_LOG_CLEANUP() pong_log_internal_cleanup()
+#else
+#define PONG_LOG_SUBGROUP_START(group_title)
+#define PONG_LOG_SUBGROUP_END()
+#define PONG_LOG_CLEAR_SUBGROUPS()
+#endif
 
 enum PongLogUrgency {
 	PONG_LOG_VERBOSE,
@@ -25,10 +32,13 @@ enum PongLogUrgency {
 int pong_log_internal_init(void);
 void pong_log_internal_log(const char *message, enum PongLogUrgency urgency, ...);
 void pong_log_internal_log_variadic(const char *message, enum PongLogUrgency urgency, va_list args);
+void pong_log_internal_cleanup(void);
+
+#ifdef PONG_VERBOSE_LOGS
 void pong_log_internal_pushSubgroup(const char *group_title);
 void pong_log_internal_popSubgroup(void);
 void pong_log_internal_clearSubgroups(void);
-void pong_log_internal_cleanup(void);
+#endif
 
 #else
 
